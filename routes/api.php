@@ -1,0 +1,120 @@
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\ImageUploadController;
+use App\Http\Controllers\API\VehicleAdController;
+use App\Http\Controllers\API\StaticPageController;
+use App\Http\Controllers\API\EventController;
+use App\Http\Controllers\API\EventAttachmentController;
+use App\Http\Controllers\API\ForumPostController;
+use App\Http\Controllers\API\ForumLikeController;
+use App\Http\Controllers\API\ForumAttachmentController;
+use App\Http\Controllers\API\ForumCommentController;
+use App\Http\Controllers\API\ForumReactionController;
+
+
+/*
+|--------------------------------------------------------------------------
+| Public Routes (No Authentication Required)
+|--------------------------------------------------------------------------
+*/
+
+// User Registration and Login
+Route::post('register/user', [AuthController::class, 'registerUser']);
+Route::post('register/inspector', [AuthController::class, 'registerInspector']);
+Route::post('login', [AuthController::class, 'login']);
+
+// Password Recovery Flow
+Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('reset-password', [AuthController::class, 'resetPassword']);
+
+// Temporary Image Upload (used for vehicles and events)
+Route::post('/upload-image', [ImageUploadController::class, 'upload']);
+
+/*
+|--------------------------------------------------------------------------
+| Protected Routes (Requires Authentication)
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth:api'])->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication and User Profile
+    |--------------------------------------------------------------------------
+    */
+    Route::post('change-password', [AuthController::class, 'changePassword']);
+    Route::get('profile', [AuthController::class, 'profile']);
+    Route::post('update-profile', [AuthController::class, 'updateProfile']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Vehicle Advertisement Management
+    |--------------------------------------------------------------------------
+    */
+    Route::get('vehicle-ads', [VehicleAdController::class, 'index']);                        // List current user's ads
+    Route::post('vehicle-ads', [VehicleAdController::class, 'store']);                       // Create a new ad
+    Route::get('vehicle-ads/{id}', [VehicleAdController::class, 'show']);                    // Get single ad details
+    Route::put('vehicle-ads/{id}', [VehicleAdController::class, 'update']);                  // Update an ad
+    Route::delete('vehicle-ads/{id}', [VehicleAdController::class, 'destroy']);              // Delete an ad
+    Route::patch('vehicle-ads/{id}/change-status', [VehicleAdController::class, 'changeStatus']); // Change ad status
+
+    // Vehicle Attachments (media upload)
+    Route::post('vehicle-attachments/upload-temp', [VehicleAdController::class, 'uploadTempAttachment']);
+    Route::delete('vehicle-ads/{id}/attachments/{attachmentId}', [VehicleAdController::class, 'deleteAttachment']);
+
+    // Publicly visible vehicle ads
+    Route::get('public-vehicle-ads', [VehicleAdController::class, 'publicVehicleAds']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Event Management & Interest System
+    |--------------------------------------------------------------------------
+    */
+    Route::post('events', [EventController::class, 'store']);                      // Create new event
+    Route::get('events', [EventController::class, 'index']);                       // Get current user's events
+    Route::get('events/{id}', [EventController::class, 'show']);                  // Get single event details
+    Route::put('events/{id}', [EventController::class, 'update']);                // Update event
+    Route::delete('events/{id}', [EventController::class, 'destroy']);            // Delete event
+    Route::patch('events/{id}/change-status', [EventController::class, 'changeStatus']); // Change event status
+
+    // Filter events by time
+    Route::get('events-upcoming', [EventController::class, 'upcoming']);          // Get upcoming events
+    Route::get('events-past', [EventController::class, 'past']);                  // Get past events
+
+    // Mark/Unmark interest in event
+    Route::post('events/{id}/interest', [EventController::class, 'markInterest']);
+
+    // Event Attachments (media)
+    Route::post('event-attachments/upload', [EventAttachmentController::class, 'upload']);
+    Route::delete('event-attachments/{id}', [EventAttachmentController::class, 'destroy']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Static Pages (About, Terms, Privacy)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('pages/{slug}', [StaticPageController::class, 'show']);   // Retrieve static page
+    Route::put('pages/{slug}', [StaticPageController::class, 'update']); // Update static page
+
+
+    Route::prefix('forum')->group(function () {
+        Route::get('posts', [ForumPostController::class, 'index']);
+        Route::post('posts', [ForumPostController::class, 'store']);
+        Route::get('posts/{id}', [ForumPostController::class, 'show']);
+        Route::put('posts/{id}', [ForumPostController::class, 'update']);
+        Route::delete('posts/{id}', [ForumPostController::class, 'destroy']);
+        Route::patch('posts/{id}/draft-toggle', [ForumPostController::class, 'toggleDraft']);
+        Route::post('attachments/upload', [ForumAttachmentController::class, 'upload']);
+        Route::delete('attachments/{id}', [ForumAttachmentController::class, 'destroy']);
+
+        Route::post('posts/{id}/like', [ForumLikeController::class, 'toggleLike']);
+
+        Route::post('posts/{id}/comments', [ForumCommentController::class, 'store']);
+        Route::post('comments/{id}/react', [ForumReactionController::class, 'toggleReaction']);
+    });
+});

@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\ForumAttachment;
+use App\Traits\ApiResponseTrait;
 
 class ForumAttachmentController extends Controller
 {
+    use ApiResponseTrait;
+
     public function upload(Request $request)
     {
         $request->validate([
@@ -19,14 +22,19 @@ class ForumAttachmentController extends Controller
         $path = $file->store('forum_attachments', 'public');
         $url = asset('storage/' . $path);
 
-        return response()->json([
-            'message' => 'File uploaded successfully',
+        return $this->apiResponse('File uploaded successfully', [
             'url' => $url,
         ], 201);
     }
+
     public function destroy($id)
     {
-        $attachment = ForumAttachment::findOrFail($id);
+        $attachment = ForumAttachment::find($id);
+
+        if (!$attachment) {
+            return $this->apiError('Attachment not found', [], 404);
+        }
+
         $file = storage_path('app/public/' . $attachment->file_url);
 
         if (file_exists($file)) {
@@ -35,7 +43,6 @@ class ForumAttachmentController extends Controller
 
         $attachment->delete();
 
-        return response()->json(['message' => 'Attachment deleted']);
+        return $this->apiResponse('Attachment deleted successfully');
     }
-
 }

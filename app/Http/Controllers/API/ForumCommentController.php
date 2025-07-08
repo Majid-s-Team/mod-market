@@ -1,13 +1,16 @@
 <?php
+
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-
 use Illuminate\Http\Request;
 use App\Models\ForumComment;
+use App\Traits\ApiResponseTrait;
 
 class ForumCommentController extends Controller
 {
+    use ApiResponseTrait;
+
     public function store(Request $request, $postId)
     {
         $request->validate([
@@ -22,6 +25,8 @@ class ForumCommentController extends Controller
             'parent_id' => $request->parent_id
         ]);
 
-        return response()->json($comment->load('children', 'reactions'));
+        return $this->apiResponse('Comment added successfully', [
+            'comment' => $comment->load('children', 'reactions')
+        ]);
     }
 }

@@ -5,25 +5,28 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\StaticPage;
+use App\Traits\ApiResponseTrait;
 
 class StaticPageController extends Controller
 {
+    use ApiResponseTrait;
+
     // Public: Get page by slug
     public function show($slug)
     {
         $page = StaticPage::where('slug', $slug)->first();
 
         if (!$page) {
-            return response()->json(['error' => 'Page not found'], 404);
+            return $this->apiError('Page not found', [], 404);
         }
 
-        return response()->json([
+        return $this->apiResponse('Page fetched successfully', [
             'title' => $page->title,
             'content' => $page->content
         ]);
     }
 
-    // Admin: Update page (optional)
+    // Admin: Update page
     public function update(Request $request, $slug)
     {
         $request->validate([
@@ -34,7 +37,7 @@ class StaticPageController extends Controller
         $page = StaticPage::where('slug', $slug)->first();
 
         if (!$page) {
-            return response()->json(['error' => 'Page not found'], 404);
+            return $this->apiError('Page not found', [], 404);
         }
 
         $page->update([
@@ -42,6 +45,9 @@ class StaticPageController extends Controller
             'content' => $request->content
         ]);
 
-        return response()->json(['message' => 'Page updated successfully']);
+        return $this->apiResponse('Page updated successfully', [
+            'title' => $page->title,
+            'content' => $page->content
+        ]);
     }
 }

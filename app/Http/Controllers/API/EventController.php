@@ -7,9 +7,12 @@ use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\EventAttachment;
 use Illuminate\Support\Facades\Validator;
-
+use \App\Traits\ApiResponseTrait;
 class EventController extends Controller
 {
+    use ApiResponseTrait;
+
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -36,18 +39,24 @@ class EventController extends Controller
             }
         }
 
-        return response()->json(['message' => 'Event created', 'event' => $event->load('attachments')]);
+        return $this->apiResponse('Event created successfully', [
+            'event' => $event->load('attachments'),
+        ]);
     }
 
     public function index()
     {
-        return Event::with(['user', 'attachments', 'interestedUsers'])->latest()->get();
+        $events = Event::with(['user', 'attachments', 'interestedUsers'])->latest()->get();
+        return $this->apiResponse('All events fetched successfully', [
+            'events' => $events
+        ]);
     }
-
     public function show($id)
     {
         $event = Event::with(['user', 'attachments', 'interestedUsers'])->findOrFail($id);
-        return response()->json($event);
+        return $this->apiResponse('Event fetched successfully', [
+            'event' => $event
+        ]);
     }
 
     public function update(Request $request, $id)
@@ -75,7 +84,10 @@ class EventController extends Controller
             $event->attachments()->create($att);
         }
 
-        return response()->json(['message' => 'Event updated', 'event' => $event->load('attachments')]);
+        // return response()->json(['message' => 'Event updated', 'event' => $event->load('attachments')]);
+        return $this->apiResponse('Event updated successfully', [
+            'event' => $event->load('attachments')
+        ]);
     }
 
     public function destroy($id)
@@ -83,7 +95,9 @@ class EventController extends Controller
         $event = Event::findOrFail($id);
         abort_if($event->user_id !== auth()->id(), 403);
         $event->delete();
-        return response()->json(['message' => 'Event deleted']);
+        // return response()->json(['message' => 'Event deleted']);
+        return $this->apiResponse('Event deleted successfully');
+
     }
 
     public function changeStatus($id)
@@ -92,30 +106,45 @@ class EventController extends Controller
         abort_if($event->user_id !== auth()->id(), 403);
         $event->status = $event->status === 'active' ? 'inactive' : 'active';
         $event->save();
-        return response()->json(['message' => 'Status changed', 'status' => $event->status]);
+        // return response()->json(['message' => 'Status changed', 'status' => $event->status]);
+        return $this->apiResponse('Status changed successfully', [
+            'status' => $event->status
+        ]);
     }
 
     public function upcoming()
     {
-        return Event::where('start_date', '>=', now())->with('attachments')->get();
+        // return Event::where('start_date', '>=', now())->with('attachments')->get();
+        $events = Event::where('start_date', '>=', now())->with('attachments')->get();
+        return $this->apiResponse('Upcoming events fetched successfully', [
+            'events' => $events
+        ]);
     }
 
     public function past()
     {
-        return Event::where('end_date', '<', now())->with('attachments')->get();
+        // return Event::where('end_date', '<', now())->with('attachments')->get();
+        $events = Event::where('end_date', '<', now())->with('attachments')->get();
+        return $this->apiResponse('Past events fetched successfully', [
+            'events' => $events
+        ]);
     }
 
     public function markInterest($id)
     {
-        $event = Event::findOrFail($id);
+        $event = Event::find($id);
+        if (!$event) {
+            return $this->apiError('Event not found', [], 404);
+        }
+
         $userId = auth()->id();
 
         if ($event->interestedUsers()->where('user_id', $userId)->exists()) {
             $event->interestedUsers()->detach($userId);
-            return response()->json(['message' => 'Interest removed']);
+            return $this->apiResponse('Interest removed successfully');
         } else {
             $event->interestedUsers()->attach($userId);
-            return response()->json(['message' => 'Interest marked']);
+            return $this->apiResponse('Interest marked successfully');
         }
     }
 

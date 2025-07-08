@@ -11,7 +11,9 @@ class VehicleAdController extends Controller
 {
     public function index()
     {
-        return VehicleAd::with('attachments')->where('user_id', auth()->id())->get();
+        // return VehicleAd::with('attachments')->where('user_id', auth()->id())->get();
+        $ads = VehicleAd::with('attachments')->where('user_id', auth()->id())->get();
+        return $this->apiResponse('Vehicle ads fetched', ['ads' => $ads]);
     }
 
     public function publicVehicleAds(Request $request)
@@ -54,7 +56,9 @@ class VehicleAdController extends Controller
 
         $vehicles = $query->latest()->paginate($request->get('per_page', 10));
 
-        return response()->json($vehicles);
+        // return response()->json($vehicles);
+        return $this->apiResponse('Public vehicle ads fetched', ['vehicles' => $vehicles]);
+
     }
 
 
@@ -102,8 +106,7 @@ class VehicleAdController extends Controller
             }
         }
 
-        return response()->json([
-            'message' => 'Vehicle created',
+        return $this->apiResponse('Vehicle ad created successfully', [
             'vehicle' => $vehicle->load('attachments')
         ], 201);
     }
@@ -112,7 +115,9 @@ class VehicleAdController extends Controller
     {
         $vehicle = VehicleAd::with('attachments')->findOrFail($id);
         abort_if($vehicle->user_id !== auth()->id(), 403);
-        return response()->json($vehicle);
+        return $this->apiResponse('Vehicle ad fetched', [
+            'vehicle' => $vehicle
+        ]);
     }
 
     // public function update(Request $request, $id)
@@ -170,9 +175,8 @@ class VehicleAdController extends Controller
 
         $vehicle->update($validated);
 
-        return response()->json([
-            'message' => 'Vehicle ad updated successfully',
-            'vehicle' => $vehicle
+        return $this->apiResponse('Vehicle ad updated successfully', [
+            'vehicle' => $vehicle->load('attachments')
         ]);
     }
 
@@ -183,7 +187,7 @@ class VehicleAdController extends Controller
         abort_if($vehicle->user_id !== auth()->id(), 403);
 
         $vehicle->delete();
-        return response()->json(['message' => 'Deleted']);
+        return $this->apiResponse('Vehicle ad deleted successfully');
     }
 
     public function changeStatus($id)
@@ -194,7 +198,9 @@ class VehicleAdController extends Controller
         $vehicle->status = $vehicle->status === 'active' ? 'inactive' : 'active';
         $vehicle->save();
 
-        return response()->json(['status' => $vehicle->status]);
+        return $this->apiResponse('Vehicle status changed', [
+            'status' => $vehicle->status
+        ]);
     }
 
     public function uploadTempAttachment(Request $request)
@@ -205,8 +211,7 @@ class VehicleAdController extends Controller
 
         $path = $request->file('attachment')->store('vehicle_attachments', 'public');
 
-        return response()->json([
-            'message' => 'Attachment uploaded',
+        return $this->apiResponse('Attachment uploaded successfully', [
             'url' => asset('storage/' . $path)
         ]);
     }
@@ -221,7 +226,7 @@ class VehicleAdController extends Controller
         \Storage::disk('public')->delete($attachment->file_path);
         $attachment->delete();
 
-        return response()->json(['message' => 'Attachment deleted']);
+        return $this->apiResponse('Attachment deleted successfully');
     }
 
 

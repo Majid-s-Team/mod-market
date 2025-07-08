@@ -11,7 +11,11 @@ class ForumPostController extends Controller
 {
     public function index()
     {
-        return ForumPost::with(['attachments', 'likes', 'comments'])->latest()->paginate(10);
+        // return ForumPost::with(['attachments', 'likes', 'comments'])->latest()->paginate(10);
+        $posts = ForumPost::with(['attachments', 'likes', 'comments'])->latest()->paginate(10);
+        return $this->apiResponse('Forum posts fetched successfully', [
+            'posts' => $posts
+        ]);
     }
 
     public function store(Request $request)
@@ -36,12 +40,33 @@ class ForumPostController extends Controller
         }
 
 
-        return response()->json($post->load('attachments'), 201);
+        // return response()->json($post->load('attachments'), 201);
+        return $this->apiResponse('Forum post created successfully', [
+            'post' => $post->load('attachments')
+        ], 201);
     }
 
+    // public function show($id)
+    // {
+    //     return ForumPost::with(['attachments', 'likes', 'comments.replies', 'comments.reactions', 'user'])->findOrFail($id);
+    // }
     public function show($id)
     {
-        return ForumPost::with(['attachments', 'likes', 'comments.replies', 'comments.reactions', 'user'])->findOrFail($id);
+        $post = ForumPost::with([
+            'attachments',
+            'likes',
+            'comments.replies',
+            'comments.reactions',
+            'user'
+        ])->find($id);
+
+        if (!$post) {
+            return $this->apiError('Post not found', [], 404);
+        }
+
+        return $this->apiResponse('Forum post fetched successfully', [
+            'post' => $post
+        ]);
     }
 
     public function update(Request $request, $id)
@@ -68,7 +93,10 @@ class ForumPostController extends Controller
         }
 
 
-        return response()->json($post->load('attachments'));
+        // return response()->json($post->load('attachments'));
+        return $this->apiResponse('Forum post updated successfully', [
+            'post' => $post->load('attachments')
+        ]);
     }
 
     public function destroy($id)
@@ -79,7 +107,9 @@ class ForumPostController extends Controller
         $post->attachments()->delete();
         $post->delete();
 
-        return response()->json(['message' => 'Post deleted successfully']);
+        // return response()->json(['message' => 'Post deleted successfully']);
+        return $this->apiResponse('Forum post deleted successfully');
+
     }
 
     public function toggleDraft($id)
@@ -90,6 +120,9 @@ class ForumPostController extends Controller
         $post->is_draft = !$post->is_draft;
         $post->save();
 
-        return response()->json(['draft' => $post->is_draft]);
+        // return response()->json(['draft' => $post->is_draft]);
+        return $this->apiResponse('Draft status toggled', [
+            'is_draft' => $post->is_draft
+        ]);
     }
 }

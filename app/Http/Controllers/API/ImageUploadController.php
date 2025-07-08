@@ -5,10 +5,11 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Traits\FileUploadTrait;
+use App\Traits\ApiResponseTrait;
 
 class ImageUploadController extends Controller
 {
-    use FileUploadTrait;
+    use FileUploadTrait, ApiResponseTrait;
 
     public function upload(Request $request)
     {
@@ -19,9 +20,8 @@ class ImageUploadController extends Controller
 
         $url = $this->uploadImage($request->file('image'), $request->key);
 
-        return response()->json([
-            'message' => 'Image uploaded successfully',
+        return $this->apiResponse('Image uploaded successfully', [
             'url' => asset('storage/' . $url)
-        ], 200);
+        ]);
     }
 }

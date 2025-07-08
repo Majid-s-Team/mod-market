@@ -10,9 +10,13 @@ use App\Http\Requests\UpdateProfileRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Traits\ApiResponseTrait;
+
 
 class AuthController extends Controller
 {
+    use ApiResponseTrait;
+
     public function registerUser(RegisterUserRequest $request)
     {
         $user = User::create([
@@ -25,13 +29,15 @@ class AuthController extends Controller
         ]);
 
         $user->assignRole('user');
+        $token = JWTAuth::fromUser($user);
 
-        // return response()->json(['message' => 'User registered successfully']);
-        return response()->json([
-            'message' => 'User registered successfully',
+        return $this->apiResponse('User registered successfully', [
             'user' => $user,
-            'roles' => $user->getRoleNames()
+            'roles' => $user->getRoleNames(),
+            
         ]);
+
+
     }
 
     public function registerInspector(RegisterInspectorRequest $request)
@@ -53,8 +59,7 @@ class AuthController extends Controller
         $user->save();
         $user->assignRole('inspector');
 
-        return response()->json([
-            'message' => 'Inspector registered successfully',
+        return $this->apiResponse('Inspector registered successfully', [
             'user' => $user,
             'roles' => $user->getRoleNames()
         ]);
@@ -82,10 +87,10 @@ class AuthController extends Controller
 
         $token = JWTAuth::fromUser($user);
 
-        return response()->json([
+        return $this->apiResponse('Login successful', [
             'access_token' => $token,
-            'token_type' => 'bearer',
-            'user' => $user
+            'user' => $user,
+
         ]);
     }
 
@@ -102,7 +107,9 @@ class AuthController extends Controller
         $user->otp_expire_at = now()->addMinutes(10);
         $user->save();
 
-        return response()->json(['message' => 'OTP sent', 'otp' => $otp]);
+        return $this->apiResponse('OTP sent successfully', [
+            'otp' => $otp
+        ]);
     }
 
     public function verifyOtp(Request $request)
@@ -114,7 +121,7 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid or expired OTP'], 422);
         }
 
-        return response()->json(['message' => 'OTP verified']);
+        return $this->apiResponse('OTP verified successfully');
     }
 
     public function resetPassword(Request $request)
@@ -134,12 +141,14 @@ class AuthController extends Controller
         $user->otp_expire_at = null;
         $user->save();
 
-        return response()->json(['message' => 'Password reset successfully']);
+        return $this->apiResponse('Password reset successfully');
     }
 
     public function profile()
     {
-        return response()->json(auth()->user());
+        return $this->apiResponse('User profile fetched successfully', [
+            'data' => auth()->user()
+        ]);
     }
 
     public function updateProfile(UpdateProfileRequest $request)
@@ -156,7 +165,9 @@ class AuthController extends Controller
 
         $user->save();
 
-        return response()->json(['message' => 'Profile updated', 'user' => $user]);
+        return $this->apiResponse('Profile updated successfully', [
+            'data' => $user
+        ]);
     }
 
     public function changePassword(Request $request)
@@ -175,7 +186,7 @@ class AuthController extends Controller
         $user->password = Hash::make($request->new_password);
         $user->save();
 
-        return response()->json(['message' => 'Password changed successfully']);
+        return $this->apiResponse('Password changed successfully');
     }
 
 

@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-
 use Illuminate\Http\Request;
 use App\Models\ForumCommentReaction;
+use App\Traits\ApiResponseTrait;
+
 class ForumReactionController extends Controller
 {
+    use ApiResponseTrait;
+
     public function toggleReaction($commentId, Request $request)
     {
         $request->validate([
@@ -20,7 +23,9 @@ class ForumReactionController extends Controller
 
         if ($reaction) {
             $reaction->delete();
-            return response()->json(['reacted' => false]);
+            return $this->apiResponse('Reaction removed successfully', [
+                'reacted' => false
+            ]);
         } else {
             ForumCommentReaction::create([
                 'forum_comment_id' => $commentId,
@@ -28,7 +33,9 @@ class ForumReactionController extends Controller
                 'reaction' => $request->reaction
             ]);
 
-            return response()->json(['reacted' => true]);
+            return $this->apiResponse('Reaction added successfully', [
+                'reacted' => true
+            ]);
         }
     }
 }

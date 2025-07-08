@@ -13,6 +13,7 @@ use App\Http\Controllers\API\ForumLikeController;
 use App\Http\Controllers\API\ForumAttachmentController;
 use App\Http\Controllers\API\ForumCommentController;
 use App\Http\Controllers\API\ForumReactionController;
+use App\Http\Controllers\API\VehicleDropdownController;
 
 
 /*
@@ -118,4 +119,32 @@ Route::middleware(['auth:api'])->group(function () {
         Route::post('posts/{id}/comments', [ForumCommentController::class, 'store']);
         Route::post('comments/{id}/react', [ForumReactionController::class, 'toggleReaction']);
     });
+
+
+
+});
+
+
+Route::prefix('dropdowns')->group(function () {
+    Route::get('/makes', [VehicleDropdownController::class, 'makes']);
+    Route::get('/models', [VehicleDropdownController::class, 'models']);
+    Route::get('/years', [VehicleDropdownController::class, 'years']);
+    Route::get('/mileages', [VehicleDropdownController::class, 'mileages']);
+    Route::get('/fuel-types', [VehicleDropdownController::class, 'fuelTypes']);
+    Route::get('/transmission-types', [VehicleDropdownController::class, 'transmissionTypes']);
+    Route::get('/states', [VehicleDropdownController::class, 'states']);
+    Route::get('/cities', [VehicleDropdownController::class, 'cities']); // use ?state_id=1 in query string
+    Route::get('/registration-statuses', [VehicleDropdownController::class, 'registrationStatuses']);
+    Route::get('/engine-modifications', [VehicleDropdownController::class, 'engineModifications']);
+    Route::get('/exhaust-systems', [VehicleDropdownController::class, 'exhaustSystems']);
+    Route::get('/suspensions', [VehicleDropdownController::class, 'suspensions']);
+    Route::get('/wheels-tires', [VehicleDropdownController::class, 'wheelsTires']);
+    Route::get('/brakes', [VehicleDropdownController::class, 'brakes']);
+    Route::get('/body-kits', [VehicleDropdownController::class, 'bodyKits']);
+    Route::get('/interior-upgrades', [VehicleDropdownController::class, 'interiorUpgrades']);
+    Route::get('/performance-tunings', [VehicleDropdownController::class, 'performanceTunings']);
+    Route::get('/electronics', [VehicleDropdownController::class, 'electronics']);
+    Route::get('/interior-exteriors', [VehicleDropdownController::class, 'interiorExteriors']);
+    Route::get('/all', [VehicleDropdownController::class, 'getAllDropdowns']);
+
 });

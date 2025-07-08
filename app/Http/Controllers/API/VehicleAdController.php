@@ -3,112 +3,119 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use App\Models\VehicleAd;
 use App\Models\VehicleAttachment;
-use Illuminate\Http\Request;
-use \App\Traits\ApiResponseTrait;
-
+use App\Models\VehicleCity;
+use App\Models\VehicleState;
+use Illuminate\Support\Facades\DB;
+use App\Traits\ApiResponseTrait;
 
 class VehicleAdController extends Controller
 {
     use ApiResponseTrait;
+
     public function index(Request $request)
     {
         $perPage = $request->get('per_page', 10);
-        $ads = VehicleAd::with('attachments')->where('user_id', auth()->id())->latest()->paginate($perPage);
+        $ads = VehicleAd::with([
+            'attachments',
+            'make:id,name',
+            'model:id,name',
+            'year:id,name',
+            'mileage:id,name',
+            'fuelType:id,name',
+            'transmissionType:id,name',
+            'registrationStatus:id,name',
+            'engineModification:id,name',
+            'exhaustSystem:id,name',
+            'suspension:id,name',
+            'wheelsTires:id,name',
+            'brakes:id,name',
+            'bodyKit:id,name',
+            'interiorUpgrade:id,name',
+            'performanceTuning:id,name',
+            'electronics:id,name',
+            'interiorExterior:id,name',
+            'city:id,name',
+            'state:id,name'
+        ])
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->paginate($perPage);
 
         return $this->apiPaginatedResponse('Vehicle ads fetched successfully', $ads);
     }
 
-
-
     public function publicVehicleAds(Request $request)
     {
-        $query = VehicleAd::with(['attachments', 'user:id,name,profile_image'])
+        $query = VehicleAd::with((new VehicleAd())->getAllRelations())
             ->where('status', 'active');
 
-        // Apply optional filters
-        if ($request->filled('make')) {
-            $query->where('make', $request->make);
-        }
-
-        if ($request->filled('model')) {
-            $query->where('model', $request->model);
-        }
-
-        if ($request->filled('city')) {
-            $query->where('city', $request->city);
-        }
-
-        if ($request->filled('state')) {
-            $query->where('state', $request->state);
+        foreach ([
+            'make_id',
+            'model_id',
+            'city_id',
+            'state_id',
+            'fuel_type_id',
+            'transmission_type_id'
+        ] as $filter) {
+            if ($request->filled($filter)) {
+                $query->where($filter, $request->$filter);
+            }
         }
 
         if ($request->filled('min_price')) {
             $query->where('price', '>=', $request->min_price);
         }
-
         if ($request->filled('max_price')) {
             $query->where('price', '<=', $request->max_price);
         }
 
-        if ($request->filled('fuel_type')) {
-            $query->where('fuel_type', $request->fuel_type);
-        }
-
-        if ($request->filled('transmission_type')) {
-            $query->where('transmission_type', $request->transmission_type);
-        }
-
         $vehicles = $query->latest()->paginate($request->get('per_page', 10));
 
-        // return response()->json($vehicles);
-        return $this->apiResponse('Public vehicle ads fetched', ['vehicles' => $vehicles]);
-
+        return $this->apiPaginatedResponse('Public vehicle ads fetched', $vehicles, 200);
     }
+
 
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'make' => 'required|string',
-            'model' => 'required|string',
-            'year' => 'required|integer|min:1900|max:' . date('Y'),
-            'mileage' => 'required|integer',
-            'fuel_type' => 'required|string',
-            'transmission_type' => 'required|string',
-            'city' => 'required|string',
-            'state' => 'required|string',
-            'registration_status' => 'required|string',
-            'has_modification' => 'boolean',
-            'engine_modification' => 'nullable|string',
-            'exhaust_system' => 'nullable|string',
-            'suspension' => 'nullable|string',
-            'wheels_tires' => 'nullable|string',
-            'brakes' => 'nullable|string',
-            'body_kit' => 'nullable|string',
-            'interior_upgrade' => 'nullable|string',
-            'performance_tuning' => 'nullable|string',
-            'electronics_infotainment' => 'nullable|string',
-            'interior_exterior' => 'nullable|string',
+            'make_id' => 'required|exists:vehicle_makes,id',
+            'model_id' => 'required|exists:vehicle_models,id',
+            'year_id' => 'required|exists:vehicle_years,id',
+            'mileage_id' => 'required|exists:vehicle_mileages,id',
+            'fuel_type_id' => 'required|exists:vehicle_fuel_types,id',
+            'transmission_type_id' => 'required|exists:vehicle_transmission_types,id',
+            'city_id' => 'required|exists:vehicle_cities,id',
+            'state_id' => 'required|exists:vehicle_states,id',
+            'registration_status_id' => 'required|exists:vehicle_registration_statuses,id',
+            'engine_modification_id' => 'nullable|exists:vehicle_engine_modifications,id',
+            'is_modified' => 'boolean',
+            'exhaust_system_id' => 'nullable|exists:vehicle_exhaust_systems,id',
+            'suspension_id' => 'nullable|exists:vehicle_suspensions,id',
+            'wheels_tires_id' => 'nullable|exists:vehicle_wheels_tires,id',
+            'brakes_id' => 'nullable|exists:vehicle_brakes,id',
+            'body_kit_id' => 'nullable|exists:vehicle_body_kits,id',
+            'interior_upgrade_id' => 'nullable|exists:vehicle_interior_upgrades,id',
+            'performance_tuning_id' => 'nullable|exists:vehicle_performance_tunings,id',
+            'electronics_id' => 'nullable|exists:vehicle_electronics,id',
+            'interior_exterior_id' => 'nullable|exists:vehicle_interior_exteriors,id',
             'description' => 'nullable|string',
             'price' => 'required|numeric',
             'is_featured' => 'boolean',
             'attachments' => 'nullable|array',
-            'attachments.*' => 'url',
+            'attachments.*' => 'url'
         ]);
 
         $data['user_id'] = auth()->id();
-
         $vehicle = VehicleAd::create($data);
 
         if (!empty($data['attachments'])) {
             foreach ($data['attachments'] as $url) {
                 $relativePath = str_replace(asset('storage') . '/', '', $url);
-
-                $vehicle->attachments()->create([
-                    'file_path' => $relativePath
-                ]);
+                $vehicle->attachments()->create(['file_path' => $relativePath]);
             }
         }
 
@@ -121,63 +128,41 @@ class VehicleAdController extends Controller
     {
         $vehicle = VehicleAd::with('attachments')->findOrFail($id);
         abort_if($vehicle->user_id !== auth()->id(), 403);
-        return $this->apiResponse('Vehicle ad fetched', [
-            'vehicle' => $vehicle
-        ]);
+        return $this->apiResponse('Vehicle ad fetched', ['vehicle' => $vehicle]);
     }
 
-    // public function update(Request $request, $id)
-    // {
-    //     $vehicle = VehicleAd::findOrFail($id);
-    //     abort_if($vehicle->user_id !== auth()->id(), 403);
-
-    //     $vehicle->update($request->all());
-    //     return response()->json($vehicle);
-    // }
     public function update(Request $request, $id)
     {
         $vehicle = VehicleAd::findOrFail($id);
-
+        abort_if($vehicle->user_id !== auth()->id(), 403);
 
         $validated = $request->validate([
-            'make' => 'required|string',
-            'model' => 'required|string',
-            'year' => 'required|numeric',
-            'mileage' => 'required|numeric',
-            'fuel_type' => 'required|string',
-            'transmission_type' => 'required|string',
-            'city' => 'required|string',
-            'state' => 'required|string',
-            'registration_status' => 'required|string',
+            'make_id' => 'required|exists:vehicle_makes,id',
+            'model_id' => 'required|exists:vehicle_models,id',
+            'year_id' => 'required|exists:vehicle_years,id',
+            'mileage_id' => 'required|exists:vehicle_mileages,id',
+            'fuel_type_id' => 'required|exists:vehicle_fuel_types,id',
+            'transmission_type_id' => 'required|exists:vehicle_transmission_types,id',
+            'city_id' => 'required|exists:vehicle_cities,id',
+            'is_modified' => 'boolean',
+            'state_id' => 'required|exists:vehicle_states,id',
+            'registration_status_id' => 'required|exists:vehicle_registration_statuses,id',
+            'engine_modification_id' => 'nullable|exists:vehicle_engine_modifications,id',
+            'exhaust_system_id' => 'nullable|exists:vehicle_exhaust_systems,id',
+            'suspension_id' => 'nullable|exists:vehicle_suspensions,id',
+            'wheels_tires_id' => 'nullable|exists:vehicle_wheels_tires,id',
+            'brakes_id' => 'nullable|exists:vehicle_brakes,id',
+            'body_kit_id' => 'nullable|exists:vehicle_body_kits,id',
+            'interior_upgrade_id' => 'nullable|exists:vehicle_interior_upgrades,id',
+            'performance_tuning_id' => 'nullable|exists:vehicle_performance_tunings,id',
+            'electronics_id' => 'nullable|exists:vehicle_electronics,id',
+            'interior_exterior_id' => 'nullable|exists:vehicle_interior_exteriors,id',
+            'description' => 'nullable|string',
             'price' => 'required|numeric',
             'is_featured' => 'boolean',
-
-            // Modifications
-            'has_modification' => 'required|boolean',
-            'engine_modification' => 'nullable|string',
-            'exhaust_system' => 'nullable|string',
-            'suspension' => 'nullable|string',
-            'wheels_tires' => 'nullable|string',
-            'brakes' => 'nullable|string',
-            'body_kit' => 'nullable|string',
-            'interior_upgrade' => 'nullable|string',
-            'performance_tuning' => 'nullable|string',
-            'electronics_infotainment' => 'nullable|string',
-            'interior_exterior' => 'nullable|string',
-            'description' => 'nullable|string',
             'attachments' => 'nullable|array',
-            'attachments.*' => 'url',
+            'attachments.*' => 'url'
         ]);
-
-        // if (!empty($validated['attachments'])) {
-        //     foreach ($validated['attachments'] as $url) {
-        //         $relativePath = str_replace(asset('storage') . '/', '', $url);
-
-        //         $vehicle->attachments()->create([
-        //             'file_path' => $relativePath
-        //         ]);
-        //     }
-        // }
 
         $vehicle->update($validated);
 
@@ -186,12 +171,10 @@ class VehicleAdController extends Controller
         ]);
     }
 
-
     public function destroy($id)
     {
         $vehicle = VehicleAd::findOrFail($id);
         abort_if($vehicle->user_id !== auth()->id(), 403);
-
         $vehicle->delete();
         return $this->apiResponse('Vehicle ad deleted successfully');
     }
@@ -204,9 +187,7 @@ class VehicleAdController extends Controller
         $vehicle->status = $vehicle->status === 'active' ? 'inactive' : 'active';
         $vehicle->save();
 
-        return $this->apiResponse('Vehicle status changed', [
-            'status' => $vehicle->status
-        ]);
+        return $this->apiResponse('Vehicle status changed', ['status' => $vehicle->status]);
     }
 
     public function uploadTempAttachment(Request $request)
@@ -228,12 +209,9 @@ class VehicleAdController extends Controller
         abort_if($vehicle->user_id !== auth()->id(), 403);
 
         $attachment = $vehicle->attachments()->where('id', $attachmentId)->firstOrFail();
-
         \Storage::disk('public')->delete($attachment->file_path);
         $attachment->delete();
 
         return $this->apiResponse('Attachment deleted successfully');
     }
-
-
 }

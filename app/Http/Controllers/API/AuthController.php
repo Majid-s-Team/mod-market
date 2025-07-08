@@ -149,7 +149,7 @@ class AuthController extends Controller
     public function profile()
     {
         return $this->apiResponse('User profile fetched successfully', [
-            'data' => auth()->user()
+            'user' => auth()->user()
         ]);
     }
 
@@ -168,7 +168,7 @@ class AuthController extends Controller
         $user->save();
 
         return $this->apiResponse('Profile updated successfully', [
-            'data' => $user
+            'user' => $user
         ]);
     }
 

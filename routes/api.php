@@ -51,6 +51,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('profile', [AuthController::class, 'profile']);
     Route::post('update-profile', [AuthController::class, 'updateProfile']);
 
+
     /*
     |--------------------------------------------------------------------------
     | Vehicle Advertisement Management

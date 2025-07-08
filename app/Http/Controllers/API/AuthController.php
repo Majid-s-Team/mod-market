@@ -39,7 +39,6 @@ class AuthController extends Controller
 
 
     }
-
     public function registerInspector(RegisterInspectorRequest $request)
     {
         $user = new User($request->all());

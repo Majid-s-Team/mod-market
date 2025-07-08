@@ -6,15 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Models\VehicleAd;
 use App\Models\VehicleAttachment;
 use Illuminate\Http\Request;
+use \App\Traits\ApiResponseTrait;
+
 
 class VehicleAdController extends Controller
 {
-    public function index()
+    use ApiResponseTrait;
+    public function index(Request $request)
     {
-        // return VehicleAd::with('attachments')->where('user_id', auth()->id())->get();
-        $ads = VehicleAd::with('attachments')->where('user_id', auth()->id())->get();
-        return $this->apiResponse('Vehicle ads fetched', ['ads' => $ads]);
+        $perPage = $request->get('per_page', 10);
+        $ads = VehicleAd::with('attachments')->where('user_id', auth()->id())->latest()->paginate($perPage);
+
+        return $this->apiPaginatedResponse('Vehicle ads fetched successfully', $ads);
     }
+
+
 
     public function publicVehicleAds(Request $request)
     {

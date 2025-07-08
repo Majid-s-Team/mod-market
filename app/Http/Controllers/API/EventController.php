@@ -44,13 +44,30 @@ class EventController extends Controller
         ]);
     }
 
-    public function index()
+    // public function index()
+    // {
+    //     $events = Event::with(['user', 'attachments', 'interestedUsers'])->latest()->get();
+    //     return $this->apiResponse('All events fetched successfully', [
+    //         'events' => $events
+    //     ]);
+    // }
+    // public function index(Request $request)
+    // {
+    //     $perPage = $request->get('per_page', 10);
+    //     $events = Event::with(['user', 'attachments', 'interestedUsers'])->latest()->paginate(10);
+    //     return $this->apiPaginatedResponse('All events fetched successfully', $events);
+    // }
+    public function index(Request $request)
     {
-        $events = Event::with(['user', 'attachments', 'interestedUsers'])->latest()->get();
-        return $this->apiResponse('All events fetched successfully', [
-            'events' => $events
-        ]);
+        $perPage = $request->get('per_page', 10);
+
+        $events = Event::with(['user', 'attachments', 'interestedUsers'])
+            ->latest()
+            ->paginate($perPage);
+
+        return $this->apiPaginatedResponse('All events fetched successfully', $events);
     }
+
     public function show($id)
     {
         $event = Event::with(['user', 'attachments', 'interestedUsers'])->findOrFail($id);
@@ -112,24 +129,29 @@ class EventController extends Controller
         ]);
     }
 
-    public function upcoming()
-    {
-        // return Event::where('start_date', '>=', now())->with('attachments')->get();
-        $events = Event::where('start_date', '>=', now())->with('attachments')->get();
-        return $this->apiResponse('Upcoming events fetched successfully', [
-            'events' => $events
-        ]);
-    }
+    // public function upcoming()
+    // {
+    //     $events = Event::where('start_date', '>=', now())
+    //         ->with('attachments')
+    //         ->latest()
+    //         ->paginate(10);
 
-    public function past()
+    //     return $this->apiPaginatedResponse('Upcoming events fetched successfully', $events);
+    // }
+    public function upcoming(Request $request)
     {
-        // return Event::where('end_date', '<', now())->with('attachments')->get();
-        $events = Event::where('end_date', '<', now())->with('attachments')->get();
-        return $this->apiResponse('Past events fetched successfully', [
-            'events' => $events
-        ]);
-    }
+        $perPage = $request->get('per_page', 10);
+        $events = Event::where('start_date', '>=', now())->with('attachments')->latest()->paginate($perPage);
 
+        return $this->apiPaginatedResponse('Upcoming events fetched successfully', $events);
+    }
+    public function past(Request $request)
+    {
+        $perPage = $request->get('per_page', 10);
+        $events = Event::where('end_date', '<', now())->with('attachments')->latest()->paginate($perPage);
+
+        return $this->apiPaginatedResponse('Past events fetched successfully', $events);
+    }
     public function markInterest($id)
     {
         $event = Event::find($id);

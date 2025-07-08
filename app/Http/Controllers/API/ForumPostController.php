@@ -3,20 +3,23 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use App\Models\ForumPost;
 use Illuminate\Support\Facades\Storage;
 
 class ForumPostController extends Controller
 {
-    public function index()
+        use ApiResponseTrait;
+
+    public function index(Request $request)
     {
-        // return ForumPost::with(['attachments', 'likes', 'comments'])->latest()->paginate(10);
-        $posts = ForumPost::with(['attachments', 'likes', 'comments'])->latest()->paginate(10);
-        return $this->apiResponse('Forum posts fetched successfully', [
-            'posts' => $posts
-        ]);
+        $perPage = $request->get('per_page', 10);
+        $posts = ForumPost::with(['attachments', 'likes', 'comments'])->latest()->paginate($perPage);
+
+        return $this->apiPaginatedResponse('Forum posts fetched successfully', $posts);
     }
+
 
     public function store(Request $request)
     {

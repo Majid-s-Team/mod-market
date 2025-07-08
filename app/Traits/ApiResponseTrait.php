@@ -29,4 +29,20 @@ trait ApiResponseTrait
             'data'    => $data
         ], $status);
     }
+
+    public function apiPaginatedResponse($message = '', $paginator = null, $status = 200): JsonResponse
+    {
+        return response()->json([
+            'status'  => $status,
+            'message' => $message,
+            'data'    => $paginator->items(),
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total()
+            ]
+        ], $status);
+    }
+
 }

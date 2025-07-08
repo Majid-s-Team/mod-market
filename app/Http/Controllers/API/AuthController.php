@@ -34,6 +34,7 @@ class AuthController extends Controller
         return $this->apiResponse('User registered successfully', [
             'user' => $user,
             'roles' => $user->getRoleNames(),
+            'access_token' => $token
             
         ]);
 
@@ -57,10 +58,12 @@ class AuthController extends Controller
 
         $user->save();
         $user->assignRole('inspector');
+        $token = JWTAuth::fromUser($user);
 
         return $this->apiResponse('Inspector registered successfully', [
             'user' => $user,
-            'roles' => $user->getRoleNames()
+            'roles' => $user->getRoleNames(),
+            'access_token' => $token
         ]);
 
     }

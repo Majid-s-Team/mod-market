@@ -35,7 +35,7 @@ class AuthController extends Controller
             'user' => $user,
             'roles' => $user->getRoleNames(),
             'access_token' => $token
-            
+
         ]);
 
 
@@ -84,7 +84,7 @@ class AuthController extends Controller
             ->first();
 
         if (!$user || !Hash::check($password, $user->password)) {
-            return response()->json(['error' => 'Invalid credentials'], 401);
+            return response()->json(['error' => 'Invalid credentials'], 422);
         }
 
         $token = JWTAuth::fromUser($user);

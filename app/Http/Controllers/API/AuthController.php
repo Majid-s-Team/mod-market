@@ -110,7 +110,9 @@ class AuthController extends Controller
         $user->save();
 
         return $this->apiResponse('OTP sent successfully', [
-            'otp' => $otp
+            'otp' => $otp,
+            'email' => $user->email,
+            'name' => $user->name
         ]);
     }
 

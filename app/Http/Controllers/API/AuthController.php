@@ -123,7 +123,11 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid or expired OTP'], 422);
         }
 
-        return $this->apiResponse('OTP verified successfully');
+        return $this->apiResponse('OTP verified successfully', [
+            'email' => $user->email,
+            'name' => $user->name,
+
+        ]);
     }
 
     public function resetPassword(Request $request)

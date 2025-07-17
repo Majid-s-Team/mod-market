@@ -71,9 +71,13 @@ class EventController extends Controller
     public function show($id)
     {
         $event = Event::with(['user', 'attachments', 'interestedUsers'])->findOrFail($id);
+        if(!$event) {
+            return $this->apiError('Event not found', [], 404);
+        }
         return $this->apiResponse('Event fetched successfully', [
             'event' => $event
         ]);
+
     }
 
     public function update(Request $request, $id)

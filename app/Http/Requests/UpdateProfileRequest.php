@@ -28,6 +28,9 @@ class UpdateProfileRequest extends FormRequest
             'state' => 'nullable|string',
             'profile_image' => 'nullable|image', 
             'profile_image_url' => 'nullable|string|url', 
+            'cover_photo_url' => 'nullable|string|url',
+
+
         ];
     }
 }

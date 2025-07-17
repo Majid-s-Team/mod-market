@@ -25,6 +25,8 @@ class AuthController extends Controller
             'contact_number' => $request->contact_number,
             'password' => Hash::make($request->password),
             'is_term_accept' => $request->is_term_accept,
+            'address' => $request->address ?? null,
+            'cover_photo' => $request->cover_photo_url ?? null,
             'role' => 'user',
         ]);
 
@@ -55,6 +57,13 @@ class AuthController extends Controller
         if ($request->hasFile('profile_image')) {
             $user->profile_image = $request->file('profile_image')->store('uploads', 'public');
         }
+        if ($request->filled('cover_photo_url')) {
+            $user->cover_photo = $request->cover_photo_url;
+        }
+        if ($request->filled('address')) {
+            $user->address = $request->address;
+        }
+
 
         $user->save();
         $user->assignRole('inspector');
@@ -112,7 +121,7 @@ class AuthController extends Controller
         return $this->apiResponse('OTP sent successfully', [
             'otp' => $otp,
             'email' => $user->email,
-            'name' => $user->name
+            'name' => $user->name,
         ]);
     }
 
@@ -169,6 +178,13 @@ class AuthController extends Controller
             $user->profile_image = $request->file('profile_image')->store('uploads/profiles', 'public');
         } elseif ($request->filled('profile_image_url')) {
             $user->profile_image = $request->profile_image_url;
+        }
+        if ($request->filled('cover_photo_url')) {
+            $user->cover_photo = $request->cover_photo_url;
+        }
+
+        if ($request->filled('address')) {
+            $user->address = $request->address;
         }
 
         $user->save();

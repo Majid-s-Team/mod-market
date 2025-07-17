@@ -20,6 +20,8 @@ class EventController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'start_time' => 'required',
+             'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'end_time' => 'required',
             'location' => 'required|string',
             'description' => 'nullable|string',
@@ -60,8 +62,9 @@ class EventController extends Controller
     public function index(Request $request)
     {
         $perPage = $request->get('per_page', 10);
+        $search = $request->get('search', $request->query('search', ''));
 
-        $events = Event::with(['user', 'attachments', 'interestedUsers'])
+        $events = Event::with(['user', 'attachments', 'interestedUsers'])->where($search)
             ->latest()
             ->paginate($perPage);
 
@@ -91,6 +94,10 @@ class EventController extends Controller
             'end_date' => 'required|date|after_or_equal:start_date',
             'start_time' => 'required',
             'end_time' => 'required',
+
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+
             'location' => 'required|string',
             'description' => 'nullable|string',
             'attachments' => 'nullable|array',

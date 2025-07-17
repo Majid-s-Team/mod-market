@@ -17,7 +17,7 @@ class EventAttachmentController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:jpg,jpeg,png,mp4|max:5120',
+            'file' => 'required|file|mimes:jpg,jpeg,png,mp4,mov,pdf,doc,docx,xls,xlsx|max:51200', 
             'type' => 'required|in:image,video'
         ]);
 

@@ -28,6 +28,7 @@ class User extends Authenticatable implements JWTSubject
         'business_license_image',
         'id_card_number',
         'address',
+        'cover_photo',
         'street',
         'city',
         'state',

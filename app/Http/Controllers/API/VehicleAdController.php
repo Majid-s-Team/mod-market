@@ -144,10 +144,10 @@ class VehicleAdController extends Controller
             'fuel_type_id' => 'required|exists:vehicle_fuel_types,id',
             'transmission_type_id' => 'required|exists:vehicle_transmission_types,id',
             'city_id' => 'required|exists:vehicle_cities,id',
-            'is_modified' => 'boolean',
             'state_id' => 'required|exists:vehicle_states,id',
             'registration_status_id' => 'required|exists:vehicle_registration_statuses,id',
             'engine_modification_id' => 'nullable|exists:vehicle_engine_modifications,id',
+            'is_modified' => 'boolean',
             'exhaust_system_id' => 'nullable|exists:vehicle_exhaust_systems,id',
             'suspension_id' => 'nullable|exists:vehicle_suspensions,id',
             'wheels_tires_id' => 'nullable|exists:vehicle_wheels_tires,id',
@@ -164,11 +164,35 @@ class VehicleAdController extends Controller
             'attachments.*' => 'url'
         ]);
 
-        $vehicle->update($validated);
+        DB::beginTransaction();
 
-        return $this->apiResponse('Vehicle ad updated successfully', [
-            'vehicle' => $vehicle->load('attachments')
-        ]);
+        try {
+            $vehicle->update($validated);
+
+            // Attachments delete and insert
+            if ($request->has('attachments')) {
+                // Old attachments delete + files delete from storage
+                foreach ($vehicle->attachments as $attachment) {
+                    \Storage::disk('public')->delete($attachment->file_path);
+                    $attachment->delete();
+                }
+
+                // New attachments insert
+                foreach ($validated['attachments'] as $url) {
+                    $relativePath = str_replace(asset('storage') . '/', '', $url);
+                    $vehicle->attachments()->create(['file_path' => $relativePath]);
+                }
+            }
+
+            DB::commit();
+
+            return $this->apiResponse('Vehicle ad updated successfully', [
+                'vehicle' => $vehicle->load('attachments')
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->apiError('Failed to update vehicle ad', ['error' => $e->getMessage()]);
+        }
     }
 
     public function destroy($id)
@@ -193,7 +217,7 @@ class VehicleAdController extends Controller
     public function uploadTempAttachment(Request $request)
     {
         $request->validate([
-            'attachment' => 'required|file|mimes:jpg,jpeg,png,mp4,pdf|max:5120'
+            'attachment' => 'required|file|mimes:jpg,jpeg,png,mp4,mov,pdf,doc,docx,xlsx,xls|max:51200'
         ]);
 
         $path = $request->file('attachment')->store('vehicle_attachments', 'public');

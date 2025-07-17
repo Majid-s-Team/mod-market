@@ -8,7 +8,19 @@ use App\Models\User;
 use App\Models\EventAttachment;
 class Event extends Model
 {
-    protected $fillable = ['user_id', 'title', 'start_date', 'end_date', 'start_time', 'end_time', 'location', 'description', 'status'];
+    protected $fillable = [
+        'user_id',
+        'title',
+        'start_date',
+        'end_date',
+        'start_time',
+        'end_time',
+        'location',
+        'latitude',
+        'longitude',
+        'description',
+        'status'
+    ];
 
     public function user()
     {

@@ -34,6 +34,8 @@ Route::post('reset-password', [AuthController::class, 'resetPassword']);
 
 // Temporary Image Upload (used for vehicles and events)
 Route::post('/upload-image', [ImageUploadController::class, 'upload']);
+Route::get('events', [EventController::class, 'index']);                       
+Route::get('events/{id}', [EventController::class, 'show']);                  
 
 /*
 |--------------------------------------------------------------------------
@@ -78,8 +80,7 @@ Route::middleware(['auth:api'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::post('events', [EventController::class, 'store']);                      // Create new event
-    Route::get('events', [EventController::class, 'index']);                       // Get current user's events
-    Route::get('events/{id}', [EventController::class, 'show']);                  // Get single event details
+
     Route::put('events/{id}', [EventController::class, 'update']);                // Update event
     Route::delete('events/{id}', [EventController::class, 'destroy']);            // Delete event
     Route::patch('events/{id}/change-status', [EventController::class, 'changeStatus']); // Change event status

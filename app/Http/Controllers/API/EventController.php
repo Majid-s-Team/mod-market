@@ -20,7 +20,7 @@ class EventController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'start_time' => 'required',
-             'latitude' => 'nullable|numeric|between:-90,90',
+            'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'end_time' => 'required',
             'location' => 'required|string',
@@ -59,22 +59,40 @@ class EventController extends Controller
     //     $events = Event::with(['user', 'attachments', 'interestedUsers'])->latest()->paginate(10);
     //     return $this->apiPaginatedResponse('All events fetched successfully', $events);
     // }
+    // public function index(Request $request)
+    // {
+    //     $perPage = $request->get('per_page', 10);
+    //     $search = $request->get('search', $request->query('search', ''));
+
+    //     $events = Event::with(['user', 'attachments', 'interestedUsers'])->where($search)
+    //         ->latest()
+    //         ->paginate($perPage);
+
+    //     return $this->apiPaginatedResponse('All events fetched successfully', $events);
+    // }
     public function index(Request $request)
     {
         $perPage = $request->get('per_page', 10);
-        $search = $request->get('search', $request->query('search', ''));
+        $search = $request->get('search', '');
 
-        $events = Event::with(['user', 'attachments', 'interestedUsers'])->where($search)
+        $events = Event::with(['user', 'attachments', 'interestedUsers'])
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', '%' . $search . '%')
+                        ->orWhere('description', 'like', '%' . $search . '%');
+                });
+            })
             ->latest()
             ->paginate($perPage);
 
         return $this->apiPaginatedResponse('All events fetched successfully', $events);
     }
 
+
     public function show($id)
     {
         $event = Event::with(['user', 'attachments', 'interestedUsers'])->findOrFail($id);
-        if(!$event) {
+        if (!$event) {
             return $this->apiError('Event not found', [], 404);
         }
         return $this->apiResponse('Event fetched successfully', [

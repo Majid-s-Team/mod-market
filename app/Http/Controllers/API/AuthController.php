@@ -9,6 +9,7 @@ use App\Http\Requests\RegisterInspectorRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Log;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Traits\ApiResponseTrait;
 
@@ -44,6 +45,7 @@ class AuthController extends Controller
     }
     public function registerInspector(RegisterInspectorRequest $request)
     {
+        Log::info('Registering inspector', ['request' => $request->all()]);
         $user = new User($request->all());
         $user->password = Hash::make($request->password);
         $user->role = 'inspector';

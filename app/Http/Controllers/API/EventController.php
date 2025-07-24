@@ -170,10 +170,15 @@ class EventController extends Controller
     public function upcoming(Request $request)
     {
         $perPage = $request->get('per_page', 10);
-        $events = Event::where('start_date', '>=', now())->with('attachments')->latest()->paginate($perPage);
+
+        $events = Event::where('end_date', '>=', now())
+            ->with('attachments')
+            ->orderBy('start_date', 'asc')
+            ->paginate($perPage);
 
         return $this->apiPaginatedResponse('Upcoming events fetched successfully', $events);
     }
+
     public function past(Request $request)
     {
         $perPage = $request->get('per_page', 10);

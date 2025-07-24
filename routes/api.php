@@ -31,6 +31,7 @@ Route::post('login', [AuthController::class, 'login']);
 Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('event-attachments/upload', [EventAttachmentController::class, 'upload']);
 
 // Temporary Image Upload (used for vehicles and events)
 Route::post('/upload-image', [ImageUploadController::class, 'upload']);
@@ -93,7 +94,6 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('events/{id}/interest', [EventController::class, 'markInterest']);
 
     // Event Attachments (media)
-    Route::post('event-attachments/upload', [EventAttachmentController::class, 'upload']);
     Route::delete('event-attachments/{id}', [EventAttachmentController::class, 'destroy']);
 
     /*

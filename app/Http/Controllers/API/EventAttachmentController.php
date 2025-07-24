@@ -8,6 +8,7 @@ use App\Models\EventAttachment;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Traits\ApiResponseTrait;
+use Log;
 
 
 class EventAttachmentController extends Controller
@@ -17,8 +18,12 @@ class EventAttachmentController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:jpg,jpeg,png,mp4,mov,pdf,doc,docx,xls,xlsx|max:51200', 
+            'file' => 'required|file|mimes:jpg,jpeg,png,mp4,mov,pdf,doc,docx,xls,xlsx,webm|max:512000', 
             'type' => 'required|in:image,video'
+        ]);
+        Log::info('EventAttachmentController: File upload request received', [
+            'file_type' => $request->file('file')->getClientOriginalExtension(),
+            'type' => $request->type
         ]);
 
         $path = $request->file('file')->store('event_attachments', 'public');

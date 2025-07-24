@@ -104,7 +104,7 @@ class EventController extends Controller
     public function update(Request $request, $id)
     {
         $event = Event::findOrFail($id);
-        abort_if($event->user_id !== auth()->id(), 403);
+        // abort_if($event->user_id !== auth()->id(), 403);
 
         $data = $request->validate([
             'title' => 'required|string',
@@ -113,8 +113,8 @@ class EventController extends Controller
             'start_time' => 'required',
             'end_time' => 'required',
 
-            'latitude' => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
 
             'location' => 'required|string',
             'description' => 'nullable|string',

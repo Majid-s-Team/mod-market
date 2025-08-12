@@ -16,6 +16,8 @@ class VehicleAd extends Model
         'year_id',
         'mileage_id',
         'fuel_type_id',
+        'category_id',
+        'sub_category_id',
         'transmission_type_id',
         'city_id',
         'state_id',
@@ -34,6 +36,8 @@ class VehicleAd extends Model
         'interior_exterior_id',
         'description',
         'price',
+        'category_id',
+        'sub_category_id',
         'is_featured',
         'status'
     ];
@@ -142,33 +146,45 @@ class VehicleAd extends Model
     {
         return $this->belongsTo(VehicleInteriorExterior::class, 'interior_exterior_id');
     }
-   public function getAllRelations()
-{
-    return [
-        'attachments',
-        'user:id,name,profile_image',
+    public function getAllRelations()
+    {
+        return [
+            'attachments',
+            'user:id,name,profile_image',
+            'make:id,name',
+            'model:id,name',
+            'year:id,name',
+            'mileage:id,name',
+            'fuelType:id,name',
+            'transmissionType:id,name',
+            'registrationStatus:id,name',
+            'engineModification:id,name',
+            'exhaustSystem:id,name',
+            'suspension:id,name',
+            'wheelsTires:id,name',
+            'brakes:id,name',
+            'bodyKit:id,name',
+            'interiorUpgrade:id,name',
+            'performanceTuning:id,name',
+            'electronics:id,name',
+            'interiorExterior:id,name',
+            'city:id,name',
+            'state:id,name',
+            'category:id,name',
+            'subCategory:id,name',
+        ];
+    }
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 
-        'make:id,name',
-        'model:id,name',
-        'year:id,name',
-        'mileage:id,name',
-        'fuelType:id,name',
-        'transmissionType:id,name',
-        'registrationStatus:id,name',
-        'engineModification:id,name',
-        'exhaustSystem:id,name',
-        'suspension:id,name',
-        'wheelsTires:id,name',
-        'brakes:id,name',
-        'bodyKit:id,name',
-        'interiorUpgrade:id,name',
-        'performanceTuning:id,name',
-        'electronics:id,name',
-        'interiorExterior:id,name',
+    public function subCategory()
+    {
+        return $this->belongsTo(SubCategory::class);
+    }
 
-        'city:id,name',
-        'state:id,name'
-    ];
-}
+    
+
 
 }

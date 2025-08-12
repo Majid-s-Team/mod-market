@@ -9,7 +9,7 @@ trait ApiResponseTrait
     /**
      * Success response
      */
-    public function apiResponse(string $message = '', array $data = [], int $status = 200): JsonResponse
+    public function apiResponse(string $message = '',  $data = [], int $status = 200): JsonResponse
     {
         return response()->json([
             'status'  => $status,

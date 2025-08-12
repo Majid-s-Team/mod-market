@@ -38,7 +38,10 @@ class VehicleAdController extends Controller
             'electronics:id,name',
             'interiorExterior:id,name',
             'city:id,name',
-            'state:id,name'
+            'state:id,name',
+            'category:id,name',
+            'subCategory:id,name',
+
         ])
             ->where('user_id', auth()->id())
             ->latest()
@@ -52,24 +55,30 @@ class VehicleAdController extends Controller
         $query = VehicleAd::with((new VehicleAd())->getAllRelations())
             ->where('status', 'active');
 
-        foreach ([
-            'make_id',
-            'model_id',
-            'city_id',
-            'state_id',
-            'fuel_type_id',
-            'transmission_type_id'
-        ] as $filter) {
-            if ($request->filled($filter)) {
-                $query->where($filter, $request->$filter);
-            }
-        }
 
-        if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->min_price);
-        }
-        if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->max_price);
+        if ($request->filled('id')) {
+            $query->where('id', $request->id);
+        } else {
+
+            foreach ([
+                'make_id',
+                'model_id',
+                'city_id',
+                'state_id',
+                'fuel_type_id',
+                'transmission_type_id'
+            ] as $filter) {
+                if ($request->filled($filter)) {
+                    $query->where($filter, $request->$filter);
+                }
+            }
+
+            if ($request->filled('min_price')) {
+                $query->where('price', '>=', $request->min_price);
+            }
+            if ($request->filled('max_price')) {
+                $query->where('price', '<=', $request->max_price);
+            }
         }
 
         $vehicles = $query->latest()->paginate($request->get('per_page', 10));
@@ -104,8 +113,11 @@ class VehicleAdController extends Controller
             'interior_exterior_id' => 'nullable|exists:vehicle_interior_exteriors,id',
             'description' => 'nullable|string',
             'price' => 'required|numeric',
+            'category_id' => 'required|exists:categories,id',
+            'sub_category_id' => 'required|exists:sub_categories,id',
             'is_featured' => 'boolean',
             'attachments' => 'nullable|array',
+
             'attachments.*' => 'url'
         ]);
 
@@ -126,7 +138,9 @@ class VehicleAdController extends Controller
 
     public function show($id)
     {
-        $vehicle = VehicleAd::with('attachments')->findOrFail($id);
+        // $vehicle = VehicleAd::with('attachments','category','subCategory')->findOrFail($id);
+        $vehicle = VehicleAd::with((new VehicleAd())->getAllRelations())->findOrFail($id);
+
         abort_if($vehicle->user_id !== auth()->id(), 403);
         return $this->apiResponse('Vehicle ad fetched', ['vehicle' => $vehicle]);
     }

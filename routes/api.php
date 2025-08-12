@@ -14,7 +14,10 @@ use App\Http\Controllers\API\ForumAttachmentController;
 use App\Http\Controllers\API\ForumCommentController;
 use App\Http\Controllers\API\ForumReactionController;
 use App\Http\Controllers\API\VehicleDropdownController;
-
+use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\SubCategoryController;
+use App\Http\Controllers\Api\InspectionRequestController;
+use App\Http\Controllers\API\CardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,12 +34,12 @@ Route::post('login', [AuthController::class, 'login']);
 Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('reset-password', [AuthController::class, 'resetPassword']);
-    Route::post('event-attachments/upload', [EventAttachmentController::class, 'upload']);
+Route::post('event-attachments/upload', [EventAttachmentController::class, 'upload']);
 
 // Temporary Image Upload (used for vehicles and events)
 Route::post('/upload-image', [ImageUploadController::class, 'upload']);
-Route::get('events', [EventController::class, 'index']);                       
-Route::get('events/{id}', [EventController::class, 'show']);                  
+Route::get('events', [EventController::class, 'index']);
+Route::get('events/{id}', [EventController::class, 'show']);
 
 /*
 |--------------------------------------------------------------------------
@@ -121,7 +124,38 @@ Route::middleware(['auth:api'])->group(function () {
         Route::post('comments/{id}/react', [ForumReactionController::class, 'toggleReaction']);
     });
 
+    Route::prefix('categories')->group(function () {
+        Route::get('/', [CategoryController::class, 'index']);
+        Route::post('/', [CategoryController::class, 'store']);
+        Route::put('{id}', [CategoryController::class, 'update']);
+        Route::delete('{id}', [CategoryController::class, 'destroy']);
+        Route::patch('{id}/status', [CategoryController::class, 'changeStatus']);
+    });
 
+    Route::prefix('subcategories')->group(function () {
+        Route::get('/', [SubCategoryController::class, 'index']);
+        Route::post('/', [SubCategoryController::class, 'store']);
+        Route::put('{id}', [SubCategoryController::class, 'update']);
+        Route::delete('{id}', [SubCategoryController::class, 'destroy']);
+        Route::patch('{id}/status', [SubCategoryController::class, 'changeStatus']);
+        Route::get('by-category/{categoryId}', [SubCategoryController::class, 'getByCategory']);
+        Route::post('vehicles', [SubCategoryController::class, 'getVehiclesByCategoryAndSubcategory']);
+    });
+
+    Route::get('/inspection-requests', [InspectionRequestController::class, 'index']);
+    Route::post('/inspection-requests', [InspectionRequestController::class, 'store']);
+    Route::get('/inspection-requests/{id}', [InspectionRequestController::class, 'show']);
+    Route::put('/inspection-requests/{id}', [InspectionRequestController::class, 'update']);
+    Route::delete('/inspection-requests/{id}', [InspectionRequestController::class, 'destroy']);
+
+    Route::get('/inspectors', [InspectionRequestController::class, 'getInspectors']);
+
+
+        Route::get('/cards', [CardController::class, 'index']);
+        Route::post('/cards', [CardController::class, 'store']);
+        Route::get('cards/{id}', [CardController::class, 'show']);
+        Route::put('cards/{id}', [CardController::class, 'update']);
+        Route::delete('cards/{id}', [CardController::class, 'destroy']);
 
 });
 

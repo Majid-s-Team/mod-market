@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\InspectionRequest;
 use App\Models\User;
 use App\Models\Card;
+use App\Models\VehicleAd;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\ApiResponseTrait;
@@ -263,37 +264,38 @@ class InspectionRequestController extends Controller
         return $this->apiResponse('Inspectors list fetched.', $inspectors);
     }
 
-    public function getInspectorAssignedRequests(Request $request)
-    {
-        $user = Auth::user();
-        // dd($user->roles);
+public function getInspectorAssignedRequests(Request $request)
+{
+    $user = Auth::user();
 
-        if (!$user->hasRole('inspector')) {
-            return $this->apiError('You are not authorized to access this resource.', [], 403);
-        }
+    if (!$user->hasRole('inspector')) {
+        return $this->apiError('You are not authorized to access this resource.', [], 403);
+    }
 
-        $status = $request->query('status'); 
+    $status = $request->query('status');
 
-        $requests = InspectionRequest::with([
-            // 'user:id,name,profile_image',
+    $requests = InspectionRequest::with([
             'user',
-            'vehicleAd:id,make_id,model_id',
+            'vehicleAd' => function ($query) {
+                $query->with((new VehicleAd)->getAllRelations());
+            },
             'city:id,name',
             'state:id,name'
         ])
-            ->where('type', 'vendor')
-            ->where('inspector_id', $user->id)
-            ->when($status, function ($query) use ($status) {
-                $query->where('status', $status);
-            })
-            ->orderByDesc('created_at')
-            ->paginate(10);
+        ->where('type', 'vendor')
+        ->where('inspector_id', $user->id)
+        ->when($status, function ($query) use ($status) {
+            $query->where('status', $status);
+        })
+        ->orderByDesc('created_at')
+        ->paginate(10);
 
-        return $this->apiPaginatedResponse(
-            'Assigned inspection requests fetched successfully.',
-            $requests
-        );
-    }
+    return $this->apiPaginatedResponse(
+        'Assigned inspection requests fetched successfully.',
+        $requests
+    );
+}
+
 
 
 }

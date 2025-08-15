@@ -10,15 +10,59 @@ use Illuminate\Support\Facades\Storage;
 
 class ForumPostController extends Controller
 {
-        use ApiResponseTrait;
+    use ApiResponseTrait;
 
     public function index(Request $request)
     {
         $perPage = $request->get('per_page', 10);
-        $posts = ForumPost::with(['attachments', 'likes', 'comments'])->latest()->paginate($perPage);
+        $authUserId = auth()->id();
+
+        $posts = ForumPost::with([
+            'user:id,name,profile_image',
+            'attachments',
+            'likes.user:id,name,profile_image',
+            'comments' => function ($query) {
+                $query->with([
+                    'user:id,name,profile_image',
+                    'reactions.user:id,name,profile_image',
+                    'replies' => function ($replyQuery) {
+                        $replyQuery->with([
+                            'user:id,name,profile_image',
+                            'reactions.user:id,name,profile_image'
+                        ]);
+                    }
+                ])->whereNull('parent_id');
+            }
+        ])
+            ->latest()
+            ->paginate($perPage);
+
+        $posts->getCollection()->transform(function ($post) use ($authUserId) {
+            // post level flags
+            $post->is_liked = $post->likes->contains('user_id', $authUserId);
+            $post->is_commented = $post->comments->contains('user_id', $authUserId);
+
+            // comment level flags
+            $post->comments->transform(function ($comment) use ($authUserId) {
+                $comment->is_commented = ($comment->user_id === $authUserId);
+                $comment->is_reacted = $comment->reactions->contains('user_id', $authUserId);
+
+                // reply level flags
+                $comment->replies->transform(function ($reply) use ($authUserId) {
+                    $reply->is_commented = ($reply->user_id === $authUserId);
+                    $reply->is_reacted = $reply->reactions->contains('user_id', $authUserId);
+                    return $reply;
+                });
+
+                return $comment;
+            });
+
+            return $post;
+        });
 
         return $this->apiPaginatedResponse('Forum posts fetched successfully', $posts);
     }
+
 
 
     public function store(Request $request)
@@ -72,34 +116,34 @@ class ForumPostController extends Controller
         ]);
     }
 
-public function update(Request $request, $id)
-{
-    $post = ForumPost::findOrFail($id);
-    abort_if($post->user_id !== auth()->id(), 403);
+    public function update(Request $request, $id)
+    {
+        $post = ForumPost::findOrFail($id);
+        abort_if($post->user_id !== auth()->id(), 403);
 
-    $data = $request->validate([
-        'description' => 'required|string',
-        'privacy' => 'in:public,private',
-        'attachments' => 'nullable|array',
-        'attachments.*' => 'url'
-    ]);
+        $data = $request->validate([
+            'description' => 'required|string',
+            'privacy' => 'in:public,private',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'url'
+        ]);
 
-    $post->update($data);
+        $post->update($data);
 
 
-    $post->attachments()->delete();
+        $post->attachments()->delete();
 
-    if (!empty($data['attachments'])) {
-        foreach ($data['attachments'] as $url) {
-            $path = str_replace(asset('storage') . '/', '', $url);
-            $post->attachments()->create(['file_url' => $path]);
+        if (!empty($data['attachments'])) {
+            foreach ($data['attachments'] as $url) {
+                $path = str_replace(asset('storage') . '/', '', $url);
+                $post->attachments()->create(['file_url' => $path]);
+            }
         }
-    }
 
-    return $this->apiResponse('Forum post updated successfully', [
-        'post' => $post->load('attachments')
-    ]);
-}
+        return $this->apiResponse('Forum post updated successfully', [
+            'post' => $post->load('attachments')
+        ]);
+    }
 
     public function destroy($id)
     {

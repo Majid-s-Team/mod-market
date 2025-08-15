@@ -21,11 +21,14 @@ class ForumPost extends Model
         return $this->hasMany(ForumAttachment::class);
     }
 
-    public function comments() {
-        return $this->hasMany(ForumComment::class);
-    }
+public function comments()
+{
+    return $this->hasMany(ForumComment::class)->whereNull('parent_id');
+}
+
 
     public function likes() {
         return $this->hasMany(ForumLike::class);
     }
+
 }

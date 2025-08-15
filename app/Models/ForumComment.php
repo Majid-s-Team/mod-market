@@ -27,4 +27,7 @@ class ForumComment extends Model
     public function reactions() {
         return $this->hasMany(ForumCommentReaction::class);
     }
+    public function replies() {
+        return $this->hasMany(ForumComment::class, 'parent_id')->with('user');
+    }
 }

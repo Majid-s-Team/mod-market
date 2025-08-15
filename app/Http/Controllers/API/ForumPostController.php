@@ -72,35 +72,34 @@ class ForumPostController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
-    {
-        $post = ForumPost::findOrFail($id);
-        abort_if($post->user_id !== auth()->id(), 403);
+public function update(Request $request, $id)
+{
+    $post = ForumPost::findOrFail($id);
+    abort_if($post->user_id !== auth()->id(), 403);
 
-        $data = $request->validate([
-            'description' => 'required|string',
-            'privacy' => 'in:public,private',
-            'attachments' => 'nullable|array',
-            'attachments.*' => 'url'
-        ]);
+    $data = $request->validate([
+        'description' => 'required|string',
+        'privacy' => 'in:public,private',
+        'attachments' => 'nullable|array',
+        'attachments.*' => 'url'
+    ]);
 
-        $post->update($data);
+    $post->update($data);
 
-        if (!empty($data['attachments'])) {
-            $post->attachments()->delete();
 
-            foreach ($data['attachments'] as $url) {
-                $path = str_replace(asset('storage') . '/', '', $url);
-                $post->attachments()->create(['file_url' => $path]);
-            }
+    $post->attachments()->delete();
+
+    if (!empty($data['attachments'])) {
+        foreach ($data['attachments'] as $url) {
+            $path = str_replace(asset('storage') . '/', '', $url);
+            $post->attachments()->create(['file_url' => $path]);
         }
-
-
-        // return response()->json($post->load('attachments'));
-        return $this->apiResponse('Forum post updated successfully', [
-            'post' => $post->load('attachments')
-        ]);
     }
+
+    return $this->apiResponse('Forum post updated successfully', [
+        'post' => $post->load('attachments')
+    ]);
+}
 
     public function destroy($id)
     {

@@ -91,6 +91,7 @@ class InspectionRequestController extends Controller
             if (!$inspector->hasRole('inspector')) {
                 return $this->apiError('Selected user is not a valid inspector.', [], 422);
             }
+
             $existing = InspectionRequest::where('user_id', Auth::id())
                 ->where('inspector_id', $request->inspector_id)
                 ->where('vehicle_ad_id', $request->vehicle_ad_id)
@@ -261,5 +262,38 @@ class InspectionRequestController extends Controller
 
         return $this->apiResponse('Inspectors list fetched.', $inspectors);
     }
+
+    public function getInspectorAssignedRequests(Request $request)
+    {
+        $user = Auth::user();
+        // dd($user->roles);
+
+        if (!$user->hasRole('inspector')) {
+            return $this->apiError('You are not authorized to access this resource.', [], 403);
+        }
+
+        $status = $request->query('status'); 
+
+        $requests = InspectionRequest::with([
+            // 'user:id,name,profile_image',
+            'user',
+            'vehicleAd:id,make_id,model_id',
+            'city:id,name',
+            'state:id,name'
+        ])
+            ->where('type', 'vendor')
+            ->where('inspector_id', $user->id)
+            ->when($status, function ($query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->orderByDesc('created_at')
+            ->paginate(10);
+
+        return $this->apiPaginatedResponse(
+            'Assigned inspection requests fetched successfully.',
+            $requests
+        );
+    }
+
 
 }

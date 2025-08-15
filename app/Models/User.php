@@ -67,4 +67,9 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(VehicleAd::class);
     }
 
+    public function availabilities()
+    {
+        return $this->hasMany(InspectorAvailability::class);
+    }
+
 }

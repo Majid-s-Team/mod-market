@@ -22,27 +22,47 @@ class CardController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'card_holder'   => 'required|string|max:255',
-            'card_number'   => 'required|string|min:13|max:19|unique:cards,card_number',
-            'expiry_month'  => 'required|digits:2',
-            'expiry_year'   => 'required|digits:4',
-            'cvv'           => 'required|digits:3',
+            'type' => 'required|in:card,bank',
+            'card_holder' => 'required_if:type,card|string|max:255',
+            'card_number' => 'required_if:type,card|string|min:13|max:19|unique:cards,card_number',
+            'expiry_month' => 'required_if:type,card|digits:2',
+            'expiry_year' => 'required_if:type,card|digits:4',
+            'cvv' => 'required_if:type,card|digits:3',
+
+            'account_holder' => 'required_if:type,bank|string|max:255',
+            'account_number' => 'required_if:type,bank|string|min:8|max:34|unique:cards,account_number',
+            'bank_name' => 'required_if:type,bank|string|max:255',
+            'branch_name' => 'nullable|string|max:255',
+            'ifsc_code' => 'nullable|string|max:20',
         ]);
 
         if ($validator->fails()) {
             return $this->apiError('Validation error', $validator->errors()->toArray(), 422);
         }
 
-        $card = Card::create([
-            'user_id'       => Auth::id(),
-            'card_holder'   => $request->card_holder,
-            'card_number'   => $request->card_number,
-            'expiry_month'  => $request->expiry_month,
-            'expiry_year'   => $request->expiry_year,
-            'cvv'           => $request->cvv,
-        ]);
+        $card = Card::create(array_merge(
+            $request->only([
+                'type',
+                'card_holder',
+                'card_number',
+                'expiry_month',
+                'expiry_year',
+                'cvv',
+                'account_holder',
+                'account_number',
+                'bank_name',
+                'branch_name',
+                'ifsc_code'
+            ]),
+            ['user_id' => Auth::id()]
+        ));
 
-        return $this->apiResponse('Card added successfully', $card, 201);
+        return $this->apiResponse(
+            $request->type === 'card' ? 'Card added successfully' : 'Bank account added successfully',
+            $card,
+            201
+        );
+
     }
 
     public function show($id)
@@ -61,25 +81,53 @@ class CardController extends Controller
         $card = Card::where('id', $id)->where('user_id', Auth::id())->first();
 
         if (!$card) {
-            return $this->apiError('Card not found', [], 404);
+            return $this->apiError('Card/Bank account not found', [], 404);
         }
 
         $validator = Validator::make($request->all(), [
-            'card_holder'   => 'sometimes|required|string|max:255',
-            'card_number'   => 'sometimes|required|string|min:13|max:19|unique:cards,card_number,' . $id,
-            'expiry_month'  => 'sometimes|required|digits:2',
-            'expiry_year'   => 'sometimes|required|digits:4',
-            'cvv'           => 'sometimes|required|digits:3',
+            'type' => 'sometimes|required|in:card,bank',
+
+
+            'card_holder' => 'required_if:type,card|string|max:255',
+            'card_number' => 'required_if:type,card|string|min:13|max:19|unique:cards,card_number,' . $id,
+            'expiry_month' => 'required_if:type,card|digits:2',
+            'expiry_year' => 'required_if:type,card|digits:4',
+            'cvv' => 'required_if:type,card|digits:3',
+
+
+            'account_holder' => 'required_if:type,bank|string|max:255',
+            'account_number' => 'required_if:type,bank|string|min:8|max:34|unique:cards,account_number,' . $id,
+            'bank_name' => 'required_if:type,bank|string|max:255',
+            'branch_name' => 'nullable|string|max:255',
+            'ifsc_code' => 'nullable|string|max:20',
         ]);
 
         if ($validator->fails()) {
             return $this->apiError('Validation error', $validator->errors()->toArray(), 422);
         }
 
-        $card->update($request->only(['card_holder', 'card_number', 'expiry_month', 'expiry_year', 'cvv']));
+        $card->update($request->only([
+            'type',
+            'card_holder',
+            'card_number',
+            'expiry_month',
+            'expiry_year',
+            'cvv',
+            'account_holder',
+            'account_number',
+            'bank_name',
+            'branch_name',
+            'ifsc_code'
+        ]));
 
-        return $this->apiResponse('Card updated successfully', $card);
+        return $this->apiResponse(
+            ($request->type ?? $card->type) === 'card'
+            ? 'Card updated successfully'
+            : 'Bank account updated successfully',
+            $card
+        );
     }
+
 
     public function destroy($id)
     {

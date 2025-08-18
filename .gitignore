@@ -17,3 +17,9 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Ignore composer files
+composer-setup.php
+composer-temp.phar
+composer.json
+composer.lock

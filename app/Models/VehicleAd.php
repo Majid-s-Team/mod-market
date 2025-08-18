@@ -150,7 +150,7 @@ class VehicleAd extends Model
     {
         return [
             'attachments',
-            'user:id,name,profile_image',
+            'user:id,name,profile_image,email',
             'make:id,name',
             'model:id,name',
             'year:id,name',
@@ -184,7 +184,7 @@ class VehicleAd extends Model
         return $this->belongsTo(SubCategory::class);
     }
 
-    
+
 
 
 }

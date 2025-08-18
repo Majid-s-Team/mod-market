@@ -170,6 +170,8 @@ class VehicleDropdownController extends Controller
             'performance_tunings' => DB::table('vehicle_performance_tunings')->where('status', 'active')->get(),
             'electronics' => DB::table('vehicle_electronics')->where('status', 'active')->get(),
             'interior_exteriors' => DB::table('vehicle_interior_exteriors')->where('status', 'active')->get(),
+            'categories' => DB::table('categories')->where('is_active', true)->get(),
+            'sub_categories' => DB::table('sub_categories')->where('is_active', true)->get()
         ]);
     }
 

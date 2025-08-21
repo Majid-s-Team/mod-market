@@ -7,61 +7,82 @@ use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use App\Models\ForumPost;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Auth\AuthenticationException;
 
 class ForumPostController extends Controller
 {
     use ApiResponseTrait;
 
-    public function index(Request $request)
-    {
-        $perPage = $request->get('per_page', 10);
-        $authUserId = auth()->id();
+  public function index(Request $request)
+{
+    $authUserId = null;
 
-        $posts = ForumPost::with([
-            'user:id,name,profile_image',
-            'attachments',
-            'likes.user:id,name,profile_image',
-            'comments' => function ($query) {
-                $query->with([
-                    'user:id,name,profile_image',
-                    'reactions.user:id,name,profile_image',
-                    'replies' => function ($replyQuery) {
-                        $replyQuery->with([
-                            'user:id,name,profile_image',
-                            'reactions.user:id,name,profile_image'
-                        ]);
-                    }
-                ])->whereNull('parent_id');
+    // if request has bearer token
+    if ($request->bearerToken()) {
+        try {
+            // authenticate user through bearer
+            $user = auth('api')->user();
+            if (!$user) {
+             // Token is invalid or expired (returned null)
+             throw new AuthenticationException('Unauthenticated. Invalid or expired token.');
             }
-        ])
-            ->latest()
-            ->paginate($perPage);
+                $authUserId = $user->id;
 
-        $posts->getCollection()->transform(function ($post) use ($authUserId) {
-            // post level flags
-            $post->is_liked = $post->likes->contains('user_id', $authUserId);
-            $post->is_commented = $post->comments->contains('user_id', $authUserId);
+        } catch (AuthenticationException $e) {
+            //token un-authorized exception
+            return response()->json([
+                'message' => $e-> getMessage()], 401);
+        }
+    }
+    // if bearer token is not present then -> authUserId null
 
-            // comment level flags
-            $post->comments->transform(function ($comment) use ($authUserId) {
-                $comment->is_commented = ($comment->user_id === $authUserId);
-                $comment->is_reacted = $comment->reactions->contains('user_id', $authUserId);
+    $perPage = $request->get('per_page', 10);
 
-                // reply level flags
-                $comment->replies->transform(function ($reply) use ($authUserId) {
-                    $reply->is_commented = ($reply->user_id === $authUserId);
-                    $reply->is_reacted = $reply->reactions->contains('user_id', $authUserId);
-                    return $reply;
-                });
+    $posts = ForumPost::with([
+        'user:id,name,profile_image',
+        'attachments',
+        'likes.user:id,name,profile_image',
+        'comments' => function ($query) {
+            $query->with([
+                'user:id,name,profile_image',
+                'reactions.user:id,name,profile_image',
+                'replies' => function ($replyQuery) {
+                    $replyQuery->with([
+                        'user:id,name,profile_image',
+                        'reactions.user:id,name,profile_image'
+                    ]);
+                }
+            ])->whereNull('parent_id');
+        }
+    ])
+    ->latest()
+    ->paginate($perPage);
 
-                return $comment;
+    $posts->getCollection()->transform(function ($post) use ($authUserId) {
+        $post->is_liked = $authUserId ? $post->likes->contains('user_id', $authUserId) : false;
+        $post->is_commented = $authUserId ? $post->comments->contains('user_id', $authUserId) : false;
+
+        $post->comments->transform(function ($comment) use ($authUserId) {
+            $comment->is_commented = ($authUserId && $comment->user_id === $authUserId);
+            $comment->is_reacted = $authUserId ? $comment->reactions->contains('user_id', $authUserId) : false;
+
+            $comment->replies->transform(function ($reply) use ($authUserId) {
+                $reply->is_commented = ($authUserId && $reply->user_id === $authUserId);
+                $reply->is_reacted = $authUserId ? $reply->reactions->contains('user_id', $authUserId) : false;
+
+                return $reply;
             });
 
-            return $post;
+            return $comment;
         });
 
-        return $this->apiPaginatedResponse('Forum posts fetched successfully', $posts);
-    }
+        return $post;
+    });
+
+    return $this->apiPaginatedResponse('Forum posts fetched successfully', $posts);
+}
+
+
 
 
 

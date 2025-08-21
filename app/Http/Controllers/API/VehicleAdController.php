@@ -10,48 +10,91 @@ use App\Models\VehicleCity;
 use App\Models\VehicleState;
 use Illuminate\Support\Facades\DB;
 use App\Traits\ApiResponseTrait;
+use Illuminate\Auth\AuthenticationException;
+
 
 class VehicleAdController extends Controller
 {
     use ApiResponseTrait;
 
-    public function index(Request $request)
-    {
-        $perPage = $request->get('per_page', 10);
-        $ads = VehicleAd::with([
-            'attachments',
-            'make:id,name',
-            'model:id,name',
-            'year:id,name',
-            'mileage:id,name',
-            'fuelType:id,name',
-            'transmissionType:id,name',
-            'registrationStatus:id,name',
-            'engineModification:id,name',
-            'exhaustSystem:id,name',
-            'suspension:id,name',
-            'wheelsTires:id,name',
-            'brakes:id,name',
-            'bodyKit:id,name',
-            'interiorUpgrade:id,name',
-            'performanceTuning:id,name',
-            'electronics:id,name',
-            'interiorExterior:id,name',
-            'city:id,name',
-            'state:id,name',
-            'category:id,name',
-            'subCategory:id,name',
+public function index(Request $request)
+{
+    $perPage = $request->get('per_page', 10);
+    $authUserId = null;
 
-        ])
-            ->where('user_id', auth()->id())
-            ->latest()
-            ->paginate($perPage);
+    if ($request->bearerToken()) {
+        try {
+            // authenticate user through bearer
+            $user = auth('api')->user();
+            if (!$user) {
+             // Token is invalid or expired (returned null)
+             throw new AuthenticationException('Unauthenticated. Invalid or expired token.');
+            }
+                $authUserId = $user->id;
 
-        return $this->apiPaginatedResponse('Vehicle ads fetched successfully', $ads);
+        } catch (AuthenticationException $e) {
+            //token un-authorized exception
+            return response()->json([
+                'message' => $e-> getMessage()], 401);
+        }
+    }
+    $query = VehicleAd::with([
+        'attachments',
+        'make:id,name',
+        'model:id,name',
+        'year:id,name',
+        'mileage:id,name',
+        'fuelType:id,name',
+        'transmissionType:id,name',
+        'registrationStatus:id,name',
+        'engineModification:id,name',
+        'exhaustSystem:id,name',
+        'suspension:id,name',
+        'wheelsTires:id,name',
+        'brakes:id,name',
+        'bodyKit:id,name',
+        'interiorUpgrade:id,name',
+        'performanceTuning:id,name',
+        'electronics:id,name',
+        'interiorExterior:id,name',
+        'city:id,name',
+        'state:id,name',
+        'category:id,name',
+        'subCategory:id,name',
+    ])->latest();
+
+    if ($authUserId) {
+        // Agar authenticated user hai to uske ads dikhao
+        $query->where('user_id', $authUserId);
+    } else {
+        // Agar guest hai to sirf active public ads dikhao
+        $query->where('status', 'active');
     }
 
+    $ads = $query->paginate($perPage);
+
+    return $this->apiPaginatedResponse('Vehicle ads fetched successfully', $ads);
+}
     public function publicVehicleAds(Request $request)
     {
+         if ($request->bearerToken()) {
+        try {
+            // authenticate user through bearer
+            $user = auth('api')->user();
+            if (!$user) {
+             // Token is invalid or expired (returned null)
+             throw new AuthenticationException('Unauthenticated. Invalid or expired token.');
+            }
+                $authUserId = $user->id;
+
+        } catch (AuthenticationException $e) {
+            //token un-authorized exception
+            return response()->json([
+                'message' => $e-> getMessage()], 401);
+        }
+    }
+
+
         $query = VehicleAd::with((new VehicleAd())->getAllRelations())
             ->where('status', 'active');
 

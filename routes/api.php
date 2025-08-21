@@ -44,6 +44,15 @@ Route::post('/upload-image', [ImageUploadController::class, 'upload']);
 Route::get('events', [EventController::class, 'index']);
 Route::get('events/{id}', [EventController::class, 'show']);
 
+// Posts without Loggin in
+// Public route - no auth required
+Route::get('forum/posts', [ForumPostController::class, 'index']);
+Route::get('vehicle-ads', [VehicleAdController::class, 'index']);
+Route::get('public-vehicle-ads', [VehicleAdController::class, 'publicVehicleAds']);
+
+
+
+
 /*
 |--------------------------------------------------------------------------
 | Protected Routes (Requires Authentication)
@@ -67,9 +76,7 @@ Route::middleware(['auth:api'])->group(function () {
     | Vehicle Advertisement Management
     |--------------------------------------------------------------------------
     */
-    Route::get('vehicle-ads', [VehicleAdController::class, 'index']);                        // List current user's ads
     Route::post('vehicle-ads', [VehicleAdController::class, 'store']);                       // Create a new ad
-    Route::get('vehicle-ads/{id}', [VehicleAdController::class, 'show']);                    // Get single ad details
     Route::put('vehicle-ads/{id}', [VehicleAdController::class, 'update']);                  // Update an ad
     Route::delete('vehicle-ads/{id}', [VehicleAdController::class, 'destroy']);              // Delete an ad
     Route::patch('vehicle-ads/{id}/change-status', [VehicleAdController::class, 'changeStatus']); // Change ad status
@@ -79,7 +86,6 @@ Route::middleware(['auth:api'])->group(function () {
     Route::delete('vehicle-ads/{id}/attachments/{attachmentId}', [VehicleAdController::class, 'deleteAttachment']);
 
     // Publicly visible vehicle ads
-    Route::get('public-vehicle-ads', [VehicleAdController::class, 'publicVehicleAds']);
 
     /*
     |--------------------------------------------------------------------------
@@ -112,7 +118,6 @@ Route::middleware(['auth:api'])->group(function () {
 
 
     Route::prefix('forum')->group(function () {
-        Route::get('posts', [ForumPostController::class, 'index']);
         Route::post('posts', [ForumPostController::class, 'store']);
         Route::get('posts/{id}', [ForumPostController::class, 'show']);
         Route::put('posts/{id}', [ForumPostController::class, 'update']);
@@ -170,11 +175,11 @@ Route::middleware(['auth:api'])->group(function () {
     Route::delete('inspector/availability/{id}', [InspectorAvailabilityController::class, 'destroy']);
     Route::get('inspector/assigned-requests', [InspectionRequestController::class, 'getInspectorAssignedRequests']);
 
-    Route::get('/inspection-reports', [InspectionReportController::class, 'index']); 
-    Route::get('/inspection-reports/{id}', [InspectionReportController::class, 'show']); 
-    Route::post('/inspection-reports/{inspection_request_id}', [InspectionReportController::class, 'store']); 
-    Route::put('/inspection-reports/{id}', [InspectionReportController::class, 'update']); 
-    Route::delete('/inspection-reports/{id}', [InspectionReportController::class, 'destroy']); 
+    Route::get('/inspection-reports', [InspectionReportController::class, 'index']);
+    Route::get('/inspection-reports/{id}', [InspectionReportController::class, 'show']);
+    Route::post('/inspection-reports/{inspection_request_id}', [InspectionReportController::class, 'store']);
+    Route::put('/inspection-reports/{id}', [InspectionReportController::class, 'update']);
+    Route::delete('/inspection-reports/{id}', [InspectionReportController::class, 'destroy']);
     Route::get('/my-inspection-report/{id?}', [InspectionReportController::class, 'myReport']);
         Route::get('/earnings-investments', [InspectionReportController::class, 'earningsOrInvestments']);
 

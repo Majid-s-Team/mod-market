@@ -49,8 +49,8 @@ Route::get('events/{id}', [EventController::class, 'show']);
 Route::get('forum/posts', [ForumPostController::class, 'index']);
 Route::get('vehicle-ads', [VehicleAdController::class, 'index']);
 Route::get('public-vehicle-ads', [VehicleAdController::class, 'publicVehicleAds']);
-
-
+Route::get('categories', action: [CategoryController::class, 'index']);
+Route::get('subcategories', [SubCategoryController::class, 'index']);
 
 
 /*
@@ -133,7 +133,6 @@ Route::middleware(['auth:api'])->group(function () {
     });
 
     Route::prefix('categories')->group(function () {
-        Route::get('/', [CategoryController::class, 'index']);
         Route::post('/', [CategoryController::class, 'store']);
         Route::put('{id}', [CategoryController::class, 'update']);
         Route::delete('{id}', [CategoryController::class, 'destroy']);
@@ -141,7 +140,6 @@ Route::middleware(['auth:api'])->group(function () {
     });
 
     Route::prefix('subcategories')->group(function () {
-        Route::get('/', [SubCategoryController::class, 'index']);
         Route::post('/', [SubCategoryController::class, 'store']);
         Route::put('{id}', [SubCategoryController::class, 'update']);
         Route::delete('{id}', [SubCategoryController::class, 'destroy']);

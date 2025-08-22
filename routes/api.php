@@ -51,6 +51,7 @@ Route::get('vehicle-ads', [VehicleAdController::class, 'index']);
 Route::get('public-vehicle-ads', [VehicleAdController::class, 'publicVehicleAds']);
 Route::get('categories', action: [CategoryController::class, 'index']);
 Route::get('subcategories', [SubCategoryController::class, 'index']);
+Route::get('forum/trending',[ForumPostController::class,'trendingForumPost']);
 
 
 /*

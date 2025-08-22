@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use App\Models\ForumPost;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Support\Facades\DB;
+
 
 class ForumPostController extends Controller
 {
@@ -37,6 +39,7 @@ class ForumPostController extends Controller
     // if bearer token is not present then -> authUserId null
 
     $perPage = $request->get('per_page', 10);
+    $search = $request->input('search'); // ✅ get search term
 
     $posts = ForumPost::with([
         'user:id,name,profile_image',
@@ -55,6 +58,10 @@ class ForumPostController extends Controller
             ])->whereNull('parent_id');
         }
     ])
+   ->when($search, function ($query, $search) {
+        // ✅ apply filter if search term is present
+        $query->where('description', 'like', '%' . $search . '%');
+    })
     ->latest()
     ->paginate($perPage);
 
@@ -81,10 +88,6 @@ class ForumPostController extends Controller
 
     return $this->apiPaginatedResponse('Forum posts fetched successfully', $posts);
 }
-
-
-
-
 
     public function store(Request $request)
     {
@@ -192,4 +195,59 @@ class ForumPostController extends Controller
             'is_draft' => $post->is_draft
         ]);
     }
+   public function trendingForumPost(Request $request)
+{
+    // Get pagination inputs (default: 10 per page)
+    $perPage = $request->input('per_page', default: 1);
+    $page = $request->input('page', 1);
+
+    // Get authenticated user (if needed for flags like is_liked later)
+    $authUserId = auth()->id();
+
+    // Fetch forum posts with full relationship data
+    $posts = ForumPost::withCount(['likes', 'comments'])
+        ->with([
+            'user:id,name,profile_image',
+            'attachments',
+            'likes.user:id,name,profile_image',
+            'comments' => function ($query) {
+                $query->with([
+                    'user:id,name,profile_image',
+                    'reactions.user:id,name,profile_image',
+                    'replies' => function ($replyQuery) {
+                        $replyQuery->with([
+                            'user:id,name,profile_image',
+                            'reactions.user:id,name,profile_image'
+                        ]);
+                    }
+                ])->whereNull('parent_id');
+            }
+        ])
+        ->orderByDesc(DB::raw('likes_count + comments_count')) // Sort by engagement
+        ->paginate($perPage, ['*'], 'page', $page);
+
+    // Add dynamic flags (like is_liked, is_commented) if needed
+    $posts->getCollection()->transform(function ($post) use ($authUserId) {
+        $post->is_liked = $authUserId ? $post->likes->contains('user_id', $authUserId) : false;
+        $post->is_commented = $authUserId ? $post->comments->contains('user_id', $authUserId) : false;
+
+        $post->comments->transform(function ($comment) use ($authUserId) {
+            $comment->is_commented = $authUserId && $comment->user_id === $authUserId;
+            $comment->is_reacted = $authUserId ? $comment->reactions->contains('user_id', $authUserId) : false;
+
+            $comment->replies->transform(function ($reply) use ($authUserId) {
+                $reply->is_commented = $authUserId && $reply->user_id === $authUserId;
+                $reply->is_reacted = $authUserId ? $reply->reactions->contains('user_id', $authUserId) : false;
+                return $reply;
+            });
+
+            return $comment;
+        });
+
+        return $post;
+    });
+
+    return $this->apiPaginatedResponse('Trending forum posts fetched successfully', $posts, 200);
+}
+
 }

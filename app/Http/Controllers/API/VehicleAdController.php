@@ -167,20 +167,12 @@ public function index(Request $request)
         $data['user_id'] = auth()->id();
         $vehicle = VehicleAd::create($data);
 
-        // if (!empty($data['attachments'])) {
-        //     foreach ($data['attachments'] as $url) {
-        //         $relativePath = str_replace(asset('storage') . '/', '', $url);
-        //         $vehicle->attachments()->create(['file_path' => $relativePath]);
-        //     }
-        // }
-
         if (!empty($data['attachments'])) {
-    foreach ($data['attachments'] as $url) {
-        $vehicle->attachments()->create([
-            'file_path' => $url  // store full URL directly
-        ]);
-    }
-}
+            foreach ($data['attachments'] as $url) {
+                $relativePath = str_replace(asset('storage') . '/', '', $url);
+                $vehicle->attachments()->create(['file_path' => $relativePath]);
+            }
+        }
 
 
         return $this->apiResponse('Vehicle ad created successfully', [

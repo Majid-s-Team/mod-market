@@ -17,7 +17,7 @@ class VehicleAttachment extends Model
     {
         return $this->belongsTo(VehicleAd::class);
     }
-    
+
     public function getFileUrlAttribute()
     {
          return Storage::disk('public')->url($this->file_path);

@@ -155,7 +155,6 @@ Route::middleware(['auth:api'])->group(function () {
     Route::put('/inspection-requests/{id}', [InspectionRequestController::class, 'update']);
     Route::delete('/inspection-requests/{id}', [InspectionRequestController::class, 'destroy']);
 
-    Route::get('/inspectors', [InspectionRequestController::class, 'getInspectors']);
 
 
     Route::get('/cards', [CardController::class, 'index']);
@@ -183,6 +182,8 @@ Route::middleware(['auth:api'])->group(function () {
         Route::get('/earnings-investments', [InspectionReportController::class, 'earningsOrInvestments']);
 
 });
+
+    Route::get('/inspectors', [InspectionRequestController::class, 'getInspectors']);
 
 
 Route::prefix('dropdowns')->group(function () {

@@ -255,14 +255,20 @@ class InspectionRequestController extends Controller
     /**
      * List all inspectors (users with inspector role).
      */
-    public function getInspectors()
-    {
-        $inspectors = User::role('inspector')
-            ->select('id', 'name', 'service_rate', 'profile_image', 'city', 'state')
-            ->get();
+    public function getInspectors(Request $request)
+{
+    $query = User::role('inspector')
+        ->select('id', 'name', 'service_rate', 'profile_image', 'city', 'state');
 
-        return $this->apiResponse('Inspectors list fetched.', $inspectors);
+    // 🔍 Apply name filter if provided
+    if ($request->has('name') && !empty($request->name)) {
+        $query->where('name', 'like', '%' . $request->name . '%');
     }
+
+    $inspectors = $query->get();
+
+    return $this->apiResponse('Inspectors list fetched.', $inspectors);
+}
 
 public function getInspectorAssignedRequests(Request $request)
 {

@@ -99,18 +99,25 @@ class TokenRequestController extends Controller
         return $this->apiResponse('All published token requests fetched successfully.', $tokenRequests);
     }
 
-    public function getMyTokenRequests()
+    public function getMyTokenRequests(Request $request)
     {
+        $perPage = $request->get('per_page', 10); 
+
         $tokenRequests = TokenRequest::with([
-            'vehicleAd' => function ($query) {
-                $query->with((new VehicleAd)->getAllRelations());
-            },
-            'buyer'
-        ])
+                'vehicleAd' => function ($query) {
+                    $query->with((new VehicleAd)->getAllRelations());
+                },
+                'buyer'
+            ])
             ->where('seller_id', Auth::id())
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate($perPage);
 
-        return $this->apiResponse('All token requests sent to you fetched successfully.', $tokenRequests);
+        return $this->apiPaginatedResponse(
+            'All token requests sent to you fetched successfully.',
+            $tokenRequests
+        );
     }
+
+
 }

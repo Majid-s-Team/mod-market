@@ -16,24 +16,29 @@ use Illuminate\Validation\Rule;
 class InspectionRequestController extends Controller
 {
     use ApiResponseTrait;
-    public function index(Request $request)
+   public function index(Request $request)
     {
         $user = Auth::user();
 
+        $perPage = $request->get('per_page', 10);
+
         $requests = InspectionRequest::with([
-            'user:id,name',
-            'inspector:id,name',
-            'vehicleAd:id,make_id,model_id',
-            'city:id,name',
-            'state:id,name',
-        ])
+                'user',
+                'inspector',
+                'city:id,name',
+                'state:id,name',
+                'vehicleAd' => function ($query) {
+                $query->with((new VehicleAd)->getAllRelations());
+            }
+            ])
             ->when($user->hasRole('inspector'), fn($q) => $q->where('inspector_id', $user->id))
             ->when(!$user->hasRole('inspector'), fn($q) => $q->where('user_id', $user->id))
             ->orderByDesc('created_at')
-            ->paginate(10);
+            ->paginate($perPage); 
 
         return $this->apiPaginatedResponse('Inspection requests fetched.', $requests);
     }
+
 
     /**
      * Store a new inspection request.
@@ -256,19 +261,20 @@ class InspectionRequestController extends Controller
      * List all inspectors (users with inspector role).
      */
     public function getInspectors(Request $request)
-{
-    $query = User::role('inspector')
-        ->select('id', 'name', 'service_rate', 'profile_image', 'city', 'state');
+    {
+        $perPage = $request->get('per_page', 10); 
 
-    // 🔍 Apply name filter if provided
-    if ($request->has('name') && !empty($request->name)) {
-        $query->where('name', 'like', '%' . $request->name . '%');
+        $query = User::role('inspector');
+
+        if ($request->has('name') && !empty($request->name)) {
+            $query->where('name', 'like', '%' . $request->name . '%');
+        }
+
+        $inspectors = $query->paginate($perPage);
+
+        return $this->apiPaginatedResponse('Inspectors list fetched.', $inspectors);
     }
 
-    $inspectors = $query->get();
-
-    return $this->apiResponse('Inspectors list fetched.', $inspectors);
-}
 
 public function getInspectorAssignedRequests(Request $request)
 {

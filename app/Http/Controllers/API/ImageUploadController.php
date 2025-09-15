@@ -15,7 +15,7 @@ class ImageUploadController extends Controller
     {
         $request->validate([
             'key' => 'required|in:profile_image,event_image,post_image,certificate,business_license_image',
-            'image' => 'required|image|max:2048',
+            'image' => 'required|image|max:204800',
         ]);
 
         $url = $this->uploadImage($request->file('image'), $request->key);

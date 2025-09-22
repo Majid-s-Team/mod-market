@@ -150,7 +150,7 @@ class VehicleAd extends Model
     {
         return [
             'attachments',
-            'user:id,name,profile_image,email',
+            'user',
             'make:id,name',
             'model:id,name',
             'year:id,name',

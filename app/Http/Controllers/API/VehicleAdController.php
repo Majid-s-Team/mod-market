@@ -79,16 +79,14 @@ public function index(Request $request)
     {
          if ($request->bearerToken()) {
         try {
-            // authenticate user through bearer
             $user = auth('api')->user();
             if (!$user) {
-             // Token is invalid or expired (returned null)
+
              throw new AuthenticationException('Unauthenticated. Invalid or expired token.');
             }
                 $authUserId = $user->id;
 
         } catch (AuthenticationException $e) {
-            //token un-authorized exception
             return response()->json([
                 'message' => $e-> getMessage()], 401);
         }

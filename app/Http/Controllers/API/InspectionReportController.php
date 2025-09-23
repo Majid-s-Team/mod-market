@@ -116,7 +116,8 @@ class InspectionReportController extends Controller
             return $this->apiError('Report not found or unauthorized', [], 404);
         }
 
-        $validated = $this->validateReport($request);
+        $validated = $this->validateFinalRemarks($request);
+
         $averageScore = $this->calculateAverageScore($validated);
 
         $report->update(array_merge($validated, [
@@ -169,6 +170,16 @@ class InspectionReportController extends Controller
             'final_remarks' => 'nullable|string'
         ]);
     }
+
+
+    /**Only validate Final Remarks on update api */
+
+    private function validateFinalRemarks(Request $request)
+{
+    return $request->validate([
+        'final_remarks' => 'nullable|string'
+    ]);
+}
 
     /**
      * Calculate average score from test results

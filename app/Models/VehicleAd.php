@@ -184,6 +184,10 @@ class VehicleAd extends Model
         return $this->belongsTo(SubCategory::class);
     }
 
+public function tokenRequests()
+{
+    return $this->hasMany(TokenRequest::class, 'vehicle_ad_id');
+}
 
 
 

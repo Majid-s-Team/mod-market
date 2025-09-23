@@ -19,25 +19,54 @@ class InspectionRequestController extends Controller
    public function index(Request $request)
     {
         $user = Auth::user();
-
         $perPage = $request->get('per_page', 10);
 
         $requests = InspectionRequest::with([
-                'user',
-                'inspector',
-                'city:id,name',
-                'state:id,name',
-                'vehicleAd' => function ($query) {
+            'user',
+            'city:id,name',
+            'state:id,name',
+            'vehicleAd' => function ($query) {
                 $query->with((new VehicleAd)->getAllRelations());
             }
-            ])
-            ->when($user->hasRole('inspector'), fn($q) => $q->where('inspector_id', $user->id))
-            ->when(!$user->hasRole('inspector'), fn($q) => $q->where('user_id', $user->id))
-            ->orderByDesc('created_at')
-            ->paginate($perPage); 
+        ])
+        ->where('user_id', $user->id)
+        ->orderByDesc('created_at')
+        ->paginate($perPage);
 
         return $this->apiPaginatedResponse('Inspection requests fetched.', $requests);
     }
+
+
+
+public function tokenSelf(Request $request)
+{
+    $user = Auth::user();
+    $perPage = $request->get('per_page', 10);
+
+    $requests = InspectionRequest::with([
+            'user',               // requester user
+            'city:id,name',
+            'state:id,name',
+            'vehicleAd' => function ($query) {
+                $query->with((new VehicleAd)->getAllRelations())
+                      ->with('user') // ad owner
+                    ->with('tokenRequests');    // <-- tokenRequest relation bhi include karo
+
+            }
+        ])
+        ->whereHas('vehicleAd', function ($q) use ($user) {
+            // only those ads which belong to the auth user
+            $q->where('user_id', $user->id);
+        })
+        ->orderByDesc('created_at')
+        ->paginate($perPage);
+
+    return $this->apiPaginatedResponse('Inspection requests sent to you fetched.', $requests);
+}
+
+
+
+
 
 
     /**
@@ -262,7 +291,7 @@ class InspectionRequestController extends Controller
      */
     public function getInspectors(Request $request)
     {
-        $perPage = $request->get('per_page', 10); 
+        $perPage = $request->get('per_page', 10);
 
         $query = User::role('inspector');
 

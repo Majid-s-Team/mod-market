@@ -116,16 +116,32 @@ class InspectionReportController extends Controller
             return $this->apiError('Report not found or unauthorized', [], 404);
         }
 
-        $validated = $this->validateFinalRemarks($request);
+        $validated = $this->validateReportUpdate($request);
 
-        $averageScore = $this->calculateAverageScore($validated);
+        if ($this->hasTestFields($validated)) {
+            $averageScore = $this->calculateAverageScore($validated + $report->toArray());
+            $validated['average_score'] = $averageScore;
+        }
 
-        $report->update(array_merge($validated, [
-            'average_score' => $averageScore
-        ]));
+        $report->update($validated);
 
         return $this->apiResponse('Inspection report updated', $report);
     }
+
+    private function hasTestFields($data)
+    {
+        $testFields = [
+            'engine_test',
+            'transmission_test',
+            'braking_system_test',
+            'suspension_system_test',
+            'interior_exterior_test',
+            'tyre_vehicle_test',
+            'computer_electronics_test'
+        ];
+        return collect($testFields)->intersect(array_keys($data))->isNotEmpty();
+    }
+
 
     /**
      * Delete a report
@@ -146,6 +162,27 @@ class InspectionReportController extends Controller
 
         return $this->apiResponse('Inspection report deleted', []);
     }
+    private function validateReportUpdate(Request $request)
+    {
+        return $request->validate([
+            'engine_test' => 'sometimes|in:poor,average,good,excellent,perfect',
+            'engine_description' => 'nullable|string',
+            'transmission_test' => 'sometimes|in:poor,average,good,excellent,perfect',
+            'transmission_description' => 'nullable|string',
+            'braking_system_test' => 'sometimes|in:poor,average,good,excellent,perfect',
+            'braking_system_description' => 'nullable|string',
+            'suspension_system_test' => 'sometimes|in:poor,average,good,excellent,perfect',
+            'suspension_system_description' => 'nullable|string',
+            'interior_exterior_test' => 'sometimes|in:poor,average,good,excellent,perfect',
+            'interior_exterior_description' => 'nullable|string',
+            'tyre_vehicle_test' => 'sometimes|in:poor,average,good,excellent,perfect',
+            'tyre_vehicle_description' => 'nullable|string',
+            'computer_electronics_test' => 'sometimes|in:poor,average,good,excellent,perfect',
+            'computer_electronics_description' => 'nullable|string',
+            'final_remarks' => 'nullable|string'
+        ]);
+    }
+
 
     /**
      * Validation rules
@@ -175,16 +212,16 @@ class InspectionReportController extends Controller
     /**Only validate Final Remarks on update api */
 
     private function validateFinalRemarks(Request $request)
-{
-    return $request->validate([
-        'final_remarks' => 'nullable|string'
-    ]);
-}
+    {
+        return $request->validate([
+            'final_remarks' => 'nullable|string'
+        ]);
+    }
 
     /**
      * Calculate average score from test results
      */
-    private function calculateAverageScore($validated)
+        private function calculateAverageScore($data)
     {
         $scoreMap = [
             'poor' => 1,
@@ -194,18 +231,26 @@ class InspectionReportController extends Controller
             'perfect' => 5
         ];
 
-        $scores = [
-            $scoreMap[$validated['engine_test']],
-            $scoreMap[$validated['transmission_test']],
-            $scoreMap[$validated['braking_system_test']],
-            $scoreMap[$validated['suspension_system_test']],
-            $scoreMap[$validated['interior_exterior_test']],
-            $scoreMap[$validated['tyre_vehicle_test']],
-            $scoreMap[$validated['computer_electronics_test']]
+        $fields = [
+            'engine_test',
+            'transmission_test',
+            'braking_system_test',
+            'suspension_system_test',
+            'interior_exterior_test',
+            'tyre_vehicle_test',
+            'computer_electronics_test'
         ];
 
-        return round(array_sum($scores) / count($scores), 2);
+        $scores = [];
+        foreach ($fields as $field) {
+            if (!empty($data[$field])) {
+                $scores[] = $scoreMap[$data[$field]];
+            }
+        }
+
+        return count($scores) > 0 ? round(array_sum($scores) / count($scores), 2) : null;
     }
+
     /**
      * View logged-in user's own inspection report
      */
@@ -241,60 +286,67 @@ class InspectionReportController extends Controller
 
     public function earningsOrInvestments(Request $request)
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        // Common filters
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
-        $year = $request->input('year');
-        $month = $request->input('month');
+            // Common filters
+            $startDate = $request->input('start_date');
+            $endDate   = $request->input('end_date');
+            $year      = $request->input('year');
+            $month     = $request->input('month');
 
-        // Build base query depending on role
-        if ($user->hasRole('inspector')) {
-            $query = InspectionRequest::where('inspector_id', $user->id)
-                ->where('payment_status', 'paid');
-            $amountColumn = 'inspector_price';
-            $title = 'Inspector Earnings';
-        } else {
-            // Default: user role - "My Investments"
-            $query = InspectionRequest::where('user_id', $user->id)
-                ->where('payment_status', 'paid');
-            $amountColumn = 'inspector_price';
-            $title = 'My Investments';
+            // Build base query depending on role
+            if ($user->hasRole('inspector')) {
+                $query = InspectionRequest::where('inspector_id', $user->id)
+                    ->where('payment_status', 'paid');
+                $amountColumn = 'inspector_price';
+                $title = 'Inspector Earnings';
+            } elseif ($user->hasRole('user')) {
+                $query = InspectionRequest::where('user_id', $user->id)
+                    ->where('payment_status', 'paid');
+                $amountColumn = 'inspector_price'; // or "total_price" if investments mean full payment
+                $title = 'My Investments';
+            } else {
+                return $this->apiError('Unauthorized role', [], 403);
+            }
+
+            // Apply filters
+            if ($startDate && $endDate) {
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            }
+            if ($year) {
+                $query->whereYear('created_at', $year);
+            }
+            if ($month) {
+                $query->whereMonth('created_at', $month);
+            }
+
+            // Get transactions
+            $transactions = $query->with([
+                'user:id,name,email',
+                'inspector:id,name,email',
+                'vehicleAd'
+            ])->latest()->get();
+
+            if ($transactions->isEmpty()) {
+                return $this->apiError('No transactions found', [], 404);
+            }
+
+            $totalAmount = $transactions->sum($amountColumn);
+
+            return $this->apiResponse($title, [
+                'total_amount'        => $totalAmount,
+                'currency'            => 'USD',
+                'total_transactions'  => $transactions->count(),
+                'transactions'        => $transactions
+            ]);
+        } catch (\Exception $e) {
+            return $this->apiError('Something went wrong', [
+                'exception' => $e->getMessage()
+            ], 500);
         }
-
-        // Apply filters
-        if ($startDate && $endDate) {
-            $query->whereBetween('created_at', [$startDate, $endDate]);
-        }
-        if ($year) {
-            $query->whereYear('created_at', $year);
-        }
-        if ($month) {
-            $query->whereMonth('created_at', $month);
-        }
-
-        // Get transactions
-        $transactions = $query->with([
-            'user:id,name,email',
-            'inspector:id,name,email',
-            'vehicleAd'
-        ])
-            ->latest()
-            ->get();
-
-
-        $totalAmount = $transactions->sum($amountColumn);
-
-        return response()->json([
-            'status' => true,
-            'title' => $title,
-            'total_amount' => $totalAmount,
-            'currency' => 'USD',
-            'total_transactions' => $transactions->count(),
-            'transactions' => $transactions
-        ]);
     }
+
 
 
 

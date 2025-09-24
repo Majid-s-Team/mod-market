@@ -19,27 +19,38 @@ class InspectorAvailabilityController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'day' => 'required|in:mon,tue,wed,thu,fri,sat,sun',
-            'is_available' => 'required|boolean',
-            // 'start_time' => 'nullable|required_if:is_available,true|date_format:H:i',
-            // 'end_time' => 'nullable|required_if:is_available,true|date_format:H:i|after:start_time',
-            'start_time' => 'nullable|date_format:H:i',
-            'end_time' => 'nullable|date_format:H:i|after:start_time',
-        ]);
+{
+    $request->validate([
+        'day' => 'required|in:mon,tue,wed,thu,fri,sat,sun',
+        'is_available' => 'required|boolean',
+        'start_time' => 'nullable|date_format:H:i',
+        'end_time' => 'nullable|date_format:H:i|after:start_time',
+    ]);
 
-        $availability = InspectorAvailability::updateOrCreate(
-            ['user_id' => Auth::id(), 'day' => $request->day],
-            [
-                'is_available' => $request->is_available,
-                'start_time' => $request->is_available ? $request->start_time : null,
-                'end_time' => $request->is_available ? $request->end_time : null
-            ]
-        );
+    // First find or create record
+    $availability = InspectorAvailability::firstOrNew([
+        'user_id' => Auth::id(),
+        'day' => $request->day,
+    ]);
 
-        return $this->apiResponse('Availability updated successfully.', $availability);
+    // Always update is_available
+    $availability->is_available = $request->is_available;
+
+    // Update times only if available = true AND values provided
+    if ($request->is_available) {
+        if ($request->filled('start_time')) {
+            $availability->start_time = $request->start_time;
+        }
+        if ($request->filled('end_time')) {
+            $availability->end_time = $request->end_time;
+        }
     }
+
+    $availability->save();
+
+    return $this->apiResponse('Availability updated successfully.', $availability);
+}
+
 
     public function destroy($id)
     {

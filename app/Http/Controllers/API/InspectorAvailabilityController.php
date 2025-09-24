@@ -33,8 +33,8 @@ class InspectorAvailabilityController extends Controller
             ['user_id' => Auth::id(), 'day' => $request->day],
             [
                 'is_available' => $request->is_available,
-                'start_time' => $request->is_available ? $request->start_time : null,
-                'end_time' => $request->is_available ? $request->end_time : null
+                // 'start_time' => $request->is_available ? $request->start_time : null,
+                // 'end_time' => $request->is_available ? $request->end_time : null
             ]
         );
 

@@ -17,6 +17,45 @@ use Illuminate\Validation\Rule;
 class InspectionRequestController extends Controller
 {
     use ApiResponseTrait;
+// public function index(Request $request)
+// {
+//     $user = Auth::user();
+//     $perPage = $request->get('per_page', 10);
+
+//     // Get paginated inspection requests
+//     $requests = InspectionRequest::with([
+//         'user',
+//         'city:id,name',
+//         'state:id,name',
+//         'vehicleAd' => function ($query) {
+//             $query->with((new VehicleAd)->getAllRelations());
+//         }
+//     ])
+//     ->where('user_id', $user->id)
+//     ->orderByDesc('created_at')
+//     ->paginate($perPage);
+
+//     // For each request, check status in inspection_requests table
+//     // If completed, get inspection_reports id
+//     $requests->getCollection()->transform(function ($request) {
+//         $request->completed_report_id = null;
+
+//         if ($request->status === 'completed') {
+//             // Get the report id from inspection_reports table
+//             $report = InspectionReport::where('inspection_request_id', $request->id)
+//                 ->first();
+
+//             $request->completed_report_id = $report ? $report->id : null;
+//         }
+
+//         return $request;
+//     });
+
+//     return $this->apiPaginatedResponse('Inspection requests fetched.', $requests);
+// }
+
+
+
 public function index(Request $request)
 {
     $user = Auth::user();
@@ -29,23 +68,28 @@ public function index(Request $request)
         'state:id,name',
         'vehicleAd' => function ($query) {
             $query->with((new VehicleAd)->getAllRelations());
-        }
+        },
+        'inspector' // 👈 Inspector relation eager load
     ])
     ->where('user_id', $user->id)
     ->orderByDesc('created_at')
     ->paginate($perPage);
 
-    // For each request, check status in inspection_requests table
-    // If completed, get inspection_reports id
+    // Transform the response
     $requests->getCollection()->transform(function ($request) {
         $request->completed_report_id = null;
 
+        // Completed report id
         if ($request->status === 'completed') {
-            // Get the report id from inspection_reports table
-            $report = InspectionReport::where('inspection_request_id', $request->id)
-                ->first();
-
+            $report = InspectionReport::where('inspection_request_id', $request->id)->first();
             $request->completed_report_id = $report ? $report->id : null;
+        }
+
+        // Inspector object handle
+        if ($request->type === 'vendor') {
+            $request->inspector = $request->inspector; // return relation object
+        } else {
+            $request->inspector = null; // agar self ho
         }
 
         return $request;
@@ -53,7 +97,6 @@ public function index(Request $request)
 
     return $this->apiPaginatedResponse('Inspection requests fetched.', $requests);
 }
-
 
 
 

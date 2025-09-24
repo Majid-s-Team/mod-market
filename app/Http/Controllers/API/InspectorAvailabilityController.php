@@ -23,8 +23,10 @@ class InspectorAvailabilityController extends Controller
         $request->validate([
             'day' => 'required|in:mon,tue,wed,thu,fri,sat,sun',
             'is_available' => 'required|boolean',
-            'start_time' => 'nullable|required_if:is_available,true|date_format:H:i',
-            'end_time' => 'nullable|required_if:is_available,true|date_format:H:i|after:start_time',
+            // 'start_time' => 'nullable|required_if:is_available,true|date_format:H:i',
+            // 'end_time' => 'nullable|required_if:is_available,true|date_format:H:i|after:start_time',
+            'start_time' => 'nullable|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i|after:start_time',
         ]);
 
         $availability = InspectorAvailability::updateOrCreate(

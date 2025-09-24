@@ -168,6 +168,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('token-requests/published', [TokenRequestController::class, 'getAllPublishedRequests']);
     Route::get('token-requests/to-me', [TokenRequestController::class, 'getMyTokenRequests']);
     Route::get('token-requests/self', [InspectionRequestController::class, 'tokenSelf']);
+Route::put('inspection-requests/{id}/statusUpdate', [InspectionRequestController::class, 'updateRequestStatus']);
 
     Route::get('inspector/availability', [InspectorAvailabilityController::class, 'index']);
     Route::post('inspector/availability', [InspectorAvailabilityController::class, 'store']);

@@ -84,7 +84,35 @@ public function tokenSelf(Request $request)
 }
 
 
+public function updateRequestStatus(Request $request, $id)
+{
+    $user = Auth::user();
 
+    // ✅ validate request
+    $validated = $request->validate([
+        'status' => 'required|in:accepted,rejected',
+        'reason' => 'required_if:status,rejected|nullable|string|max:1000',
+    ]);
+
+    // ✅ find inspection request
+    $inspectionRequest = InspectionRequest::with('vehicleAd')->findOrFail($id);
+
+    // ✅ check ownership
+    if ($inspectionRequest->vehicleAd->user_id !== $user->id) {
+        return $this->apiError('You are not authorized to update this request.', [], 403);
+    }
+
+    // ✅ update status + reason (only if provided)
+    $inspectionRequest->status = $validated['status'];
+    $inspectionRequest->reasons = $validated['reason'] ?? null;
+    $inspectionRequest->save();
+
+    return $this->apiResponse('Inspection request status updated successfully.', [
+        'inspection_request_id' => $inspectionRequest->id,
+        'status' => $inspectionRequest->status,
+        'reason' => $inspectionRequest->reasons,
+    ]);
+}
 
 
 
@@ -324,6 +352,41 @@ public function tokenSelf(Request $request)
     }
 
 
+// public function getInspectorAssignedRequests(Request $request)
+// {
+//     $user = Auth::user();
+
+//     if (!$user->hasRole('inspector')) {
+//         return $this->apiError('You are not authorized to access this resource.', [], 403);
+//     }
+
+//     $status = $request->query('status');
+
+//     $requests = InspectionRequest::with([
+//             'user',
+//             'vehicleAd' => function ($query) {
+//                 $query->with((new VehicleAd)->getAllRelations());
+//             },
+//             'city:id,name',
+//             'state:id,name'
+//         ])
+//         ->where('type', 'vendor')
+//         ->where('inspector_id', $user->id)
+//         ->when($status, function ($query) use ($status) {
+//             $query->where('status', $status);
+//         })
+//         ->orderByDesc('created_at')
+//         ->paginate(10);
+
+//     return $this->apiPaginatedResponse(
+//         'Assigned inspection requests fetched successfully.',
+//         $requests
+//     );
+// }
+
+
+
+// to return report id
 public function getInspectorAssignedRequests(Request $request)
 {
     $user = Auth::user();
@@ -350,12 +413,24 @@ public function getInspectorAssignedRequests(Request $request)
         ->orderByDesc('created_at')
         ->paginate(10);
 
+    // add completed_report_id if status = completed
+    $requests->getCollection()->transform(function ($request) {
+        $request->completed_report_id = null;
+
+        if ($request->status === 'completed') {
+            $report = InspectionReport::where('inspection_request_id', $request->id)
+                ->first();
+
+            $request->completed_report_id = $report ? $report->id : null;
+        }
+
+        return $request;
+    });
+
     return $this->apiPaginatedResponse(
         'Assigned inspection requests fetched successfully.',
         $requests
     );
 }
-
-
 
 }

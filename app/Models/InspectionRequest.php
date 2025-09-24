@@ -56,4 +56,8 @@ class InspectionRequest extends Model
     {
         return $this->belongsTo(VehicleState::class);
     }
+     public function inspectionReports()
+    {
+        return $this->hasMany(InspectionReport::class, 'inspection_request_id');
+    }
 }

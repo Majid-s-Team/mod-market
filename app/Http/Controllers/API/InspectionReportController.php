@@ -74,6 +74,7 @@ class InspectionReportController extends Controller
         if (!$user->hasRole('inspector')) {
             return $this->apiError('Unauthorized', [], 403);
         }
+        // dd($inspectionRequestId);
 
         $inspectionRequest = InspectionRequest::where('id', $inspectionRequestId)
             ->where('inspector_id', $user->id)
@@ -257,7 +258,6 @@ class InspectionReportController extends Controller
     public function myReport($id = null)
     {
         $user = Auth::user();
-
         $query = InspectionReport::with([
             'inspectionRequest.user:id,name,email,contact_number,profile_image',
             'inspectionRequest.vehicleAd' => function ($q) {
@@ -267,6 +267,7 @@ class InspectionReportController extends Controller
             ->whereHas('inspectionRequest', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
+        // dd($query);
 
         // If ID is provided, get single record
         if ($id) {

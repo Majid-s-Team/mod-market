@@ -7,6 +7,7 @@ use App\Models\InspectionRequest;
 use App\Models\User;
 use App\Models\Card;
 use App\Models\VehicleAd;
+use App\Models\InspectionReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\ApiResponseTrait;
@@ -16,25 +17,43 @@ use Illuminate\Validation\Rule;
 class InspectionRequestController extends Controller
 {
     use ApiResponseTrait;
-   public function index(Request $request)
-    {
-        $user = Auth::user();
-        $perPage = $request->get('per_page', 10);
+public function index(Request $request)
+{
+    $user = Auth::user();
+    $perPage = $request->get('per_page', 10);
 
-        $requests = InspectionRequest::with([
-            'user',
-            'city:id,name',
-            'state:id,name',
-            'vehicleAd' => function ($query) {
-                $query->with((new VehicleAd)->getAllRelations());
-            }
-        ])
-        ->where('user_id', $user->id)
-        ->orderByDesc('created_at')
-        ->paginate($perPage);
+    // Get paginated inspection requests
+    $requests = InspectionRequest::with([
+        'user',
+        'city:id,name',
+        'state:id,name',
+        'vehicleAd' => function ($query) {
+            $query->with((new VehicleAd)->getAllRelations());
+        }
+    ])
+    ->where('user_id', $user->id)
+    ->orderByDesc('created_at')
+    ->paginate($perPage);
 
-        return $this->apiPaginatedResponse('Inspection requests fetched.', $requests);
-    }
+    // For each request, check status in inspection_requests table
+    // If completed, get inspection_reports id
+    $requests->getCollection()->transform(function ($request) {
+        $request->completed_report_id = null;
+
+        if ($request->status === 'completed') {
+            // Get the report id from inspection_reports table
+            $report = InspectionReport::where('inspection_request_id', $request->id)
+                ->first();
+
+            $request->completed_report_id = $report ? $report->id : null;
+        }
+
+        return $request;
+    });
+
+    return $this->apiPaginatedResponse('Inspection requests fetched.', $requests);
+}
+
 
 
 

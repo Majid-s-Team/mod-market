@@ -39,6 +39,16 @@ class TokenRequestController extends Controller
         if ($alreadyRequested) {
             return $this->apiError('You have already sent a token request for this ad.', [], 422);
         }
+        // agar is vehcile ad ka against ma token approved ho chuka ha to
+        //  semd error bhaj de ka vehcile ad owner has already accpet somesone token
+
+        $alreadyAccepted = TokenRequest::where('vehicle_ad_id', $request->vehicle_ad_id)
+            ->where('status', 'approved')
+            ->exists();
+
+        if ($alreadyAccepted) {
+            return $this->apiError("The Owner of this Vehicle Ad has already accepted someone's token", [], 422);
+        }
 
         $tokenRequest = TokenRequest::create([
             'vehicle_ad_id' => $vehicleAd->id,
@@ -101,7 +111,7 @@ class TokenRequestController extends Controller
 
     public function getMyTokenRequests(Request $request)
     {
-        $perPage = $request->get('per_page', 10); 
+        $perPage = $request->get('per_page', 10);
 
         $tokenRequests = TokenRequest::with([
                 'vehicleAd' => function ($query) {

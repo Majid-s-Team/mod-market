@@ -41,6 +41,7 @@ public function index(Request $request)
     $query = VehicleAd::with([
         'attachments',
         'make:id,name',
+        'tokenRequests',
         'model:id,name',
         'year:id,name',
         'mileage:id,name',

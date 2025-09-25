@@ -150,6 +150,7 @@ class VehicleAd extends Model
     {
         return [
             'attachments',
+            'tokenRequests',
             'user',
             'make:id,name',
             'model:id,name',

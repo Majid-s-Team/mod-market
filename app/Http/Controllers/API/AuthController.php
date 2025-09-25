@@ -216,22 +216,21 @@ class AuthController extends Controller
     }
     public function getUsers(Request $request, $id = null)
     {
-
+        // Single user detail
         if ($id) {
-            $user = User::findOrFail($id);
+            $user = User::where('role', 'user')->findOrFail($id);
             return $this->apiResponse('User detail fetched successfully.', $user);
         }
 
-
+        // Paginated list
         $perPage = $request->get('per_page', 10);
-        $query = User::query();
+        $query = User::where('role', 'user'); // 👈 only role = user
 
-
-        if ($request->has('name') && !empty($request->name)) {
+        if ($request->filled('name')) {
             $query->where('name', 'like', '%' . $request->name . '%');
         }
 
-        if ($request->has('email') && !empty($request->email)) {
+        if ($request->filled('email')) {
             $query->where('email', 'like', '%' . $request->email . '%');
         }
 

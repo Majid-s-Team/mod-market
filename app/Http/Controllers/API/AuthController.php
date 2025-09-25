@@ -214,31 +214,22 @@ class AuthController extends Controller
 
         return $this->apiResponse('Password changed successfully');
     }
-    public function getUsers(Request $request, $id = null)
+ public function getUsers(Request $request, $id = null)
     {
-        // Single user detail
         if ($id) {
             $user = User::where('role', 'user')->findOrFail($id);
             return $this->apiResponse('User detail fetched successfully.', $user);
         }
-
-        // Paginated list
+    
         $perPage = $request->get('per_page', 10);
-        $query = User::where('role', 'user'); // 👈 only role = user
-
-        if ($request->filled('name')) {
-            $query->where('name', 'like', '%' . $request->name . '%');
-        }
-
-        if ($request->filled('email')) {
-            $query->where('email', 'like', '%' . $request->email . '%');
-        }
-
+    
+        $query = User::where('role', 'user'); 
+    
+    
         $users = $query->paginate($perPage);
-
+    
         return $this->apiPaginatedResponse('Users list fetched successfully.', $users);
     }
-
 
 
 }

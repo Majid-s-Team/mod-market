@@ -379,10 +379,14 @@ public function updateRequestStatus(Request $request, $id)
     /**
      * List all inspectors (users with inspector role).
      */
-    public function getInspectors(Request $request)
-    {
-        $perPage = $request->get('per_page', 10);
+        public function getInspectors(Request $request,$id=null)
+        {
+            if ($id) {
+            $inspector = User::role('inspector')->findOrFail($id);
+            return $this->apiResponse('Inspector detail fetched.', $inspector);
+        }
 
+        $perPage = $request->get('per_page', 10);
         $query = User::role('inspector');
 
         if ($request->has('name') && !empty($request->name)) {
@@ -393,7 +397,6 @@ public function updateRequestStatus(Request $request, $id)
 
         return $this->apiPaginatedResponse('Inspectors list fetched.', $inspectors);
     }
-
 
 // public function getInspectorAssignedRequests(Request $request)
 // {

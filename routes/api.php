@@ -185,7 +185,7 @@ Route::put('inspection-requests/{id}/statusUpdate', [InspectionRequestController
 
 });
 
-    Route::get('/inspectors', [InspectionRequestController::class, 'getInspectors']);
+Route::get('/inspectors/{id?}', [InspectionRequestController::class, 'getInspectors']);
 
 
 Route::prefix('dropdowns')->group(function () {

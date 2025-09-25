@@ -32,6 +32,7 @@ use App\Http\Controllers\API\InspectionReportController;
 Route::post('register/user', [AuthController::class, 'registerUser']);
 Route::post('register/inspector', [AuthController::class, 'registerInspector']);
 Route::post('login', [AuthController::class, 'login']);
+Route::get('/all-users/{id?}', [AuthController::class, 'getUsers']);
 
 // Password Recovery Flow
 Route::post('forgot-password', [AuthController::class, 'forgotPassword']);

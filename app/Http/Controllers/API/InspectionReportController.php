@@ -307,12 +307,35 @@ class InspectionReportController extends Controller
                 return $this->apiError('Report not found or unauthorized', [], 404);
             }
 
-            return $this->apiResponse('Your inspection report retrieved successfully', $report);
+ // avreage score by 100.
+    $reportWithPercentage = $report->toArray();
+    $reportWithPercentage['average_score'] = ($report->average_score / 5) * 100;
+    $reportWithPercentage['rating'] = round(num: $report->average_score);
+
+
+            return $this->apiResponse('Your inspection report retrieved successfully', $reportWithPercentage);
         }
 
         // Otherwise, return all reports for this user
         $reports = $query->latest()->get();
-        return $this->apiResponse('All your inspection reports retrieved successfully', $reports);
+
+         $reportsWithRating = $reports->map(function ($report) {
+             $reportArray = $report->toArray();
+
+    // average_score ko out of 100 me convert karo
+             $scoreOutOf100 = ($report->average_score / 5) * 100;
+
+    // Response fields set karo
+        $reportArray['rating'] = round(num: $report->average_score); // integer rating
+
+     $reportArray['average_score'] = round($scoreOutOf100, 2); // out of 100
+
+    return $reportArray;
+});
+
+
+
+        return $this->apiResponse('All your inspection reports retrieved successfully', $reportsWithRating);
     }
 
     public function earningsOrInvestments(Request $request)

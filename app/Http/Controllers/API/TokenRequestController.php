@@ -47,7 +47,7 @@ class TokenRequestController extends Controller
             ->exists();
 
         if ($alreadyAccepted) {
-            return $this->apiError("The Owner of this Vehicle Ad has already accepted someone's token", [], 422);
+            return $this->apiError("The owner of this Vehicle Ad has already accepted someone else's token", [], 422);
         }
 
         $tokenRequest = TokenRequest::create([
@@ -85,6 +85,18 @@ class TokenRequestController extends Controller
         ];
 
         $tokenRequest->update($update);
+
+
+        //  Agar approve kiya gaya hai to baki sab ko reject kar do
+    if ($request->status === 'approved') {
+        TokenRequest::where('vehicle_ad_id', $tokenRequest->vehicle_ad_id)
+            ->where('id', '!=', $tokenRequest->id)
+            ->where('status', 'pending')
+            ->update([
+                'status' => 'rejected',
+                'reject_reason' => "The owner of this Vehicle Ad has already accepted someone else's token"
+            ]);
+    }
 
         $msg = $request->status === 'approved'
             ? 'Request approved successfully.'

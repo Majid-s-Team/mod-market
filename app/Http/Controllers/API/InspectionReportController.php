@@ -360,7 +360,7 @@ class InspectionReportController extends Controller
             ])->latest()->get();
 
             if ($transactions->isEmpty()) {
-                return $this->apiError('No transactions found', [], 404);
+                return $this->apiError('No transactions found', [], 200);
             }
 
             $totalAmount = $transactions->sum($amountColumn);

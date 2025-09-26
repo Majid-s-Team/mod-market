@@ -99,7 +99,13 @@ class InspectionReportController extends Controller
 
         $inspectionRequest->update(['status' => 'completed']);
 
-        return $this->apiResponse('Inspection report created', $report);
+    // avreage score by 100.
+    $reportWithPercentage = $report->toArray();
+    $reportWithPercentage['average_score'] = ($report->average_score / 5) * 100;
+
+    return $this->apiResponse('Inspection report created', $reportWithPercentage);
+
+        // return $this->apiResponse('Inspection report created', $report);
     }
 
     /**

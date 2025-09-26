@@ -158,7 +158,7 @@ public function index(Request $request)
             'category_id' => 'required|exists:categories,id',
             'sub_category_id' => 'required|exists:sub_categories,id',
             'is_featured' => 'boolean',
-            'attachments' => 'nullable|array',
+            'attachments' => 'required|array',
 
             'attachments.*' => 'url'
         ]);

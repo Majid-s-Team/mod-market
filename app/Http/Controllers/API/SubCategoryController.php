@@ -67,7 +67,7 @@ class SubCategoryController extends Controller
     {
         $request->validate([
             'category_id' => 'required|exists:categories,id',
-            'sub_category_id' => 'required|exists:sub_categories,id'
+            'sub_category_id' => 'sometimes|exists:sub_categories,id'
         ]);
 
         $vehicles = VehicleAd::where('category_id', $request->category_id)

@@ -23,6 +23,8 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'latitude'=>$request->latitude,
+            'longitude'=>$request->longitude,
             'contact_number' => $request->contact_number,
             'password' => Hash::make($request->password),
             'is_term_accept' => $request->is_term_accept,
@@ -220,14 +222,14 @@ class AuthController extends Controller
             $user = User::where('role', 'user')->findOrFail($id);
             return $this->apiResponse('User detail fetched successfully.', $user);
         }
-    
+
         $perPage = $request->get('per_page', 10);
-    
-        $query = User::where('role', 'user'); 
-    
-    
+
+        $query = User::where('role', 'user');
+
+
         $users = $query->paginate($perPage);
-    
+
         return $this->apiPaginatedResponse('Users list fetched successfully.', $users);
     }
 

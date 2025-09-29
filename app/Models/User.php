@@ -22,6 +22,8 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'company_name',
         'email',
+        'latitude',
+        'longitude',
         'contact_number',
         'password',
         'is_term_accept',
@@ -71,5 +73,10 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(InspectorAvailability::class);
     }
+
+    public function cards()
+{
+    return $this->hasMany(Card::class, 'user_id');
+}
 
 }

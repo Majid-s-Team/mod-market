@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\TokenRequest;
 use App\Models\VehicleAd;
+use App\Models\Card;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\ApiResponseTrait;
@@ -13,54 +14,65 @@ class TokenRequestController extends Controller
 {
     use ApiResponseTrait;
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'vehicle_ad_id' => 'required|exists:vehicle_ads,id',
-            'token_money' => 'required|numeric|min:1',
-            'concern' => 'nullable|string|max:1000'
-        ]);
+  public function store(Request $request)
+{
+    $request->validate([
+        'vehicle_ad_id' => 'required|exists:vehicle_ads,id',
+        'token_money'   => 'required|numeric|min:1',
+        'concern'       => 'nullable|string|max:1000',
+        'card_id'       => 'required|exists:cards,id', // card_id required
+    ]);
 
-        $vehicleAd = VehicleAd::findOrFail($request->vehicle_ad_id);
+    $vehicleAd = VehicleAd::findOrFail($request->vehicle_ad_id);
 
-        if ($vehicleAd->user_id == Auth::id()) {
-            return $this->apiError('You cannot send a token request to your own ad.', [], 403);
-        }
-
-        if ($request->token_money > $vehicleAd->price) {
-            return $this->apiError('Token money cannot exceed the vehicle price.', [], 422);
-        }
-
-        // Check if same buyer has already sent request for this ad
-        $alreadyRequested = TokenRequest::where('vehicle_ad_id', $vehicleAd->id)
-            ->where('buyer_id', Auth::id())
-            ->exists();
-
-        if ($alreadyRequested) {
-            return $this->apiError('You have already sent a token request for this ad.', [], 422);
-        }
-        // agar is vehcile ad ka against ma token approved ho chuka ha to
-        //  semd error bhaj de ka vehcile ad owner has already accpet somesone token
-
-        $alreadyAccepted = TokenRequest::where('vehicle_ad_id', $request->vehicle_ad_id)
-            ->where('status', 'approved')
-            ->exists();
-
-        if ($alreadyAccepted) {
-            return $this->apiError("The owner of this Vehicle Ad has already accepted someone else's token", [], 422);
-        }
-
-        $tokenRequest = TokenRequest::create([
-            'vehicle_ad_id' => $vehicleAd->id,
-            'buyer_id' => Auth::id(),
-            'seller_id' => $vehicleAd->user_id,
-            'token_money' => $request->token_money,
-            'concern' => $request->concern,
-            'status' => 'pending'
-        ]);
-
-        return $this->apiResponse('Token request sent successfully.', $tokenRequest, 201);
+    if ($vehicleAd->user_id == Auth::id()) {
+        return $this->apiError('You cannot send a token request to your own ad.', [], 403);
     }
+
+    if ($request->token_money > $vehicleAd->price) {
+        return $this->apiError('Token money cannot exceed the vehicle price.', [], 422);
+    }
+
+    // Validate card belongs to this user
+    $card = Card::where('id', $request->card_id)
+                ->where('user_id', Auth::id())
+                ->first();
+
+    if (!$card) {
+        return $this->apiError('Invalid card: this card does not belong to you.', [], 403);
+    }
+
+    // Check if same buyer has already sent request for this ad
+    $alreadyRequested = TokenRequest::where('vehicle_ad_id', $vehicleAd->id)
+        ->where('buyer_id', Auth::id())
+        ->exists();
+
+    if ($alreadyRequested) {
+        return $this->apiError('You have already sent a token request for this ad.', [], 422);
+    }
+
+    // Check if ad already has approved token
+    $alreadyAccepted = TokenRequest::where('vehicle_ad_id', $request->vehicle_ad_id)
+        ->where('status', 'approved')
+        ->exists();
+
+    if ($alreadyAccepted) {
+        return $this->apiError("The owner of this Vehicle Ad has already accepted someone else's token", [], 422);
+    }
+
+    $tokenRequest = TokenRequest::create([
+        'vehicle_ad_id' => $vehicleAd->id,
+        'buyer_id'      => Auth::id(),
+        'seller_id'     => $vehicleAd->user_id,
+        'token_money'   => $request->token_money,
+        'concern'       => $request->concern,
+        'status'        => 'pending',
+        'card_id'       => $card->id, // save card_id too
+    ]);
+
+    return $this->apiResponse('Token request sent successfully.', $tokenRequest, 201);
+}
+
 
     public function updateStatus(Request $request, $id)
     {

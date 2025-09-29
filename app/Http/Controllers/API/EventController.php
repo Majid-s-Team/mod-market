@@ -20,8 +20,8 @@ class EventController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'start_time' => 'required',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
+            'latitude' => 'nullable|string',
+            'longitude' => 'nullable|string',
             'end_time' => 'required',
             'location' => 'required|string',
             'description' => 'nullable|string',
@@ -113,8 +113,8 @@ class EventController extends Controller
             'start_time' => 'required',
             'end_time' => 'required',
 
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
+            'latitude' => 'nullable|string',
+            'longitude' => 'nullable|string',
 
             'location' => 'required|string',
             'description' => 'nullable|string',

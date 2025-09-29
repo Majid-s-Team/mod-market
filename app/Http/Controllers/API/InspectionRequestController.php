@@ -407,7 +407,12 @@ public function getInspectors(Request $request, $id = null)
 {
     if ($id) {
         $inspector = User::role('inspector')
-            ->with('availabilities') // Inspector ki availability bhi load hogi
+            ->whereHas('cards', function ($q) {
+                $q->where('type', 'bank'); // sirf bank type ka card check karein
+            })
+            ->with([
+                'availabilities'
+            ])
             ->findOrFail($id);
 
         return $this->apiResponse('Inspector detail fetched.', $inspector);
@@ -416,7 +421,12 @@ public function getInspectors(Request $request, $id = null)
     $perPage = $request->get('per_page', 10);
 
     $query = User::role('inspector')
-        ->with('availabilities'); // List me bhi availability load hogi
+        ->whereHas('cards', function ($q) {
+            $q->where('type', 'bank'); // sirf un inspectors ko jinke paas bank card ho
+        })
+        ->with([
+            'availabilities'
+        ]);
 
     if ($request->has('name') && !empty($request->name)) {
         $query->where('name', 'like', '%' . $request->name . '%');
@@ -426,10 +436,6 @@ public function getInspectors(Request $request, $id = null)
 
     return $this->apiPaginatedResponse('Inspectors list fetched.', $inspectors);
 }
-
-
-
-
 
 
 

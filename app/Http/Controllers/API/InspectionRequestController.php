@@ -180,9 +180,13 @@ public function updateRequestStatus(Request $request, $id)
             // Vendor
             'inspector_id' => 'required_if:type,vendor|exists:users,id',
             'inspection_date_start' => 'required_if:type,vendor|nullable|date',
-            'inspection_date_end' => 'required_if:type,vendor|nullable|date|after_or_equal:inspection_date_start',
+            // 'inspection_date_end' => 'required_if:type,vendor|nullable|date|after_or_equal:inspection_date_start',
+            'inspection_date_end' => 'nullable|date|after_or_equal:inspection_date_start',
+
             'inspection_time_start' => 'required_if:type,vendor|nullable|date_format:H:i',
-            'inspection_time_end' => 'required_if:type,vendor|nullable|date_format:H:i|after_or_equal:inspection_time_start',
+            // 'inspection_time_end' => 'required_if:type,vendor|nullable|date_format:H:i|after_or_equal:inspection_time_start',
+            'inspection_time_end' => 'nullable|date_format:H:i|after_or_equal:inspection_time_start',
+
             'description' => 'nullable|string',
             'card_id' => 'required_if:type,vendor|exists:cards,id'
         ]);

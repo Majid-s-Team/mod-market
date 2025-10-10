@@ -21,6 +21,7 @@ use App\Http\Controllers\API\CardController;
 use App\Http\Controllers\API\TokenRequestController;
 use App\Http\Controllers\API\InspectorAvailabilityController;
 use App\Http\Controllers\API\InspectionReportController;
+use App\Http\Controllers\API\MessageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -60,8 +61,16 @@ Route::get('forum/trending',[ForumPostController::class,'trendingForumPost']);
 | Protected Routes (Requires Authentication)
 |--------------------------------------------------------------------------
 */
+Route::prefix('socket/messages')->group(function () {
+    Route::post('/', [MessageController::class, 'socketStore']);
+    Route::get('/history/{user1}/{user2}', [MessageController::class, 'chatHistory']);
+    Route::get('/unseen/{user_id}', [MessageController::class, 'unseenMessages']);
+    Route::post('/seen', [MessageController::class, 'markSeen']);
+});
+
 
 Route::middleware(['auth:api'])->group(function () {
+
 
     /*
     |--------------------------------------------------------------------------

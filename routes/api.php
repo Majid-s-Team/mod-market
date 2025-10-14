@@ -22,6 +22,7 @@ use App\Http\Controllers\API\TokenRequestController;
 use App\Http\Controllers\API\InspectorAvailabilityController;
 use App\Http\Controllers\API\InspectionReportController;
 use App\Http\Controllers\API\MessageController;
+use App\Http\Controllers\API\ReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -191,7 +192,13 @@ Route::put('inspection-requests/{id}/statusUpdate', [InspectionRequestController
     Route::put('/inspection-reports/{id}', [InspectionReportController::class, 'update']);
     Route::delete('/inspection-reports/{id}', [InspectionReportController::class, 'destroy']);
     Route::get('/my-inspection-report/{id?}', [InspectionReportController::class, 'myReport']);
-        Route::get('/earnings-investments', [InspectionReportController::class, 'earningsOrInvestments']);
+    Route::get('/earnings-investments', [InspectionReportController::class, 'earningsOrInvestments']);
+
+
+    Route::post('/reviews', [ReviewController::class, 'store']);           
+    Route::get('/reviews/{id}', [ReviewController::class, 'userReviews']); 
+    Route::put('/reviews/{id}', [ReviewController::class, 'update']);    
+    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']); 
 
 });
 

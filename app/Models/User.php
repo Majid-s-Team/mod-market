@@ -53,6 +53,8 @@ class User extends Authenticatable implements JWTSubject
         'is_term_accept' => 'boolean',
         'service_rate' => 'decimal:2'
     ];
+    protected $appends = ['average_rating', 'reviews_count'];
+
 
     public function getJWTIdentifier()
     {
@@ -75,8 +77,27 @@ class User extends Authenticatable implements JWTSubject
     }
 
     public function cards()
-{
-    return $this->hasMany(Card::class, 'user_id');
-}
+    {
+        return $this->hasMany(Card::class, 'user_id');
+    }
+    public function reviewsGiven()
+    {
+        return $this->hasMany(Review::class, 'reviewer_id');
+    }
+
+    public function reviewsReceived()
+    {
+        return $this->hasMany(Review::class, 'reviewed_id');
+    }
+
+    public function getAverageRatingAttribute()
+    {
+        return round($this->reviewsReceived()->avg('rating') ?? 0, 2);
+    }
+
+    public function getReviewsCountAttribute()
+    {
+        return $this->reviewsReceived()->count();
+    }
 
 }

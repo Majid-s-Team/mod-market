@@ -23,6 +23,9 @@ use App\Http\Controllers\API\InspectorAvailabilityController;
 use App\Http\Controllers\API\InspectionReportController;
 use App\Http\Controllers\API\MessageController;
 use App\Http\Controllers\API\ReviewController;
+use App\Http\Controllers\API\NotificationController;
+use App\Http\Controllers\API\PushNotificationController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -199,6 +202,17 @@ Route::put('inspection-requests/{id}/statusUpdate', [InspectionRequestController
     Route::get('/reviews/{id}', [ReviewController::class, 'userReviews']); 
     Route::put('/reviews/{id}', [ReviewController::class, 'update']);    
     Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']); 
+
+});
+
+Route::middleware('auth:api')->prefix('notifications')->group(function () {
+    Route::get('/', [NotificationController::class, 'index']);
+    Route::get('/{id}', [NotificationController::class, 'show']);
+    Route::post('/mark-as-read/{id}', [NotificationController::class, 'markAsRead']);
+    Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('/{id}', [NotificationController::class, 'destroy']);
+    Route::delete('/clear/all', [NotificationController::class, 'clearAll']);
+    Route::post('/send', [PushNotificationController::class, 'send']);
 
 });
 

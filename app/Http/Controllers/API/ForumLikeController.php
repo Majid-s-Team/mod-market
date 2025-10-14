@@ -5,9 +5,8 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\ForumPost;
-use App\Models\ForumLike;
-use Illuminate\Support\Facades\Auth;
 use App\Traits\ApiResponseTrait;
+use App\Helpers\NotificationHelper;
 
 class ForumLikeController extends Controller
 {
@@ -21,15 +20,29 @@ class ForumLikeController extends Controller
             return $this->apiError('Forum post not found', [], 404);
         }
 
-        $like = $post->likes()->where('user_id', auth()->id())->first();
+        $userId = auth()->id();
+        $userName = auth()->user()->name;
+
+        $like = $post->likes()->where('user_id', $userId)->first();
 
         if ($like) {
             $like->delete();
+
             return $this->apiResponse('Like removed successfully', [
                 'liked' => false
             ]);
         } else {
-            $post->likes()->create(['user_id' => auth()->id()]);
+            $post->likes()->create(['user_id' => $userId]);
+
+            if ($post->user_id !== $userId) {
+                NotificationHelper::sendTemplateNotification(
+                    $post->user_id,
+                    'forum_like',
+                    ['username' => $userName],
+                    ['post_id' => $post->id, 'liked_by' => $userId]
+                );
+            }
+
             return $this->apiResponse('Post liked successfully', [
                 'liked' => true
             ]);

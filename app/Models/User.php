@@ -39,7 +39,8 @@ class User extends Authenticatable implements JWTSubject
         'profile_image',
         'otp',
         'otp_expire_at',
-        'role'
+        'role',
+        'fcm_token'
     ];
 
     protected $hidden = [
@@ -99,5 +100,11 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->reviewsReceived()->count();
     }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class, 'user_id');
+    }
+
 
 }

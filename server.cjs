@@ -48,22 +48,29 @@ io.on("connection", (socket) => {
 
   socket.on("send_message", async (rawData) => {
     let data = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
-    const { sender_id, receiver_id, message, message_type = "text" } = data;
+    const { sender_id, receiver_id, message, message_type = "text", media_url } = data;
 
-    if (!sender_id || !receiver_id || !message) {
-      socket.emit("error", { message: "sender_id, receiver_id, and message are required" });
-      return;
-    }
+   if (!sender_id || !receiver_id || (!message && !media_url)) {
+    socket.emit("error", {
+      message: "sender_id, receiver_id, and either message or media_url are required",
+    });
+    return;
+  }
 
     try {
-      const response = await axios.post(`${LARAVEL_API_URL}/api/socket/messages`, {
-        sender_id,
-        receiver_id,
-        message,
-        message_type,
-      });
+      // const response = await axios.post(`${LARAVEL_API_URL}/api/socket/messages`, {
+      //   sender_id,
+      //   receiver_id,
+      //   message,
+      //   message_type,
+      //   media_url
+      // });
+      const payload = { sender_id, receiver_id, message_type };
+       if (message) payload.message = message;
+if (media_url) payload.media_url = media_url;
 
-      const savedMessage = response.data?.data;
+    const response = await axios.post(`${LARAVEL_API_URL}/api/socket/messages`, payload);
+        const savedMessage = response.data?.data;
       if (!savedMessage) {
         socket.emit("error", { message: "Invalid response from Laravel API" });
         return;

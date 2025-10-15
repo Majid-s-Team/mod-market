@@ -17,17 +17,21 @@ class MessageController extends Controller
         $validated = $request->validate([
             'sender_id' => 'required|exists:users,id',
             'receiver_id' => 'required|exists:users,id',
-            'message' => 'required|string',
-            'message_type' => 'nullable|string|in:text,image,video,file,emoji,link'
-
-            
+            'message' => 'nullable|string',
+            'message_type' => 'nullable|string|in:text,image,video,file,emoji,link',
+            'media_url' => 'nullable|string',
         ]);
+
+        if (empty($validated['message'] ?? null) && empty($validated['media_url'] ?? null)) {
+            return $this->apiResponse('Either message or media_url is required', null, 422);
+        }
 
         $msg = Message::create([
             'sender_id' => $validated['sender_id'],
             'receiver_id' => $validated['receiver_id'],
-            'message' => $validated['message'],
+            'message' => $validated['message'] ?? '',
             'message_type' => $validated['message_type'] ?? 'text',
+            'media_url' => $validated['media_url'] ?? '',
             'status' => 'sent',
         ]);
 
@@ -35,6 +39,7 @@ class MessageController extends Controller
 
         return $this->apiResponse('Message sent successfully', $msg, 201);
     }
+
 
     public function chatHistory($user1, $user2)
     {

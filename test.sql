@@ -47,3 +47,16 @@ INSERT INTO activities (name, is_active, created_at, updated_at) VALUES
 ('Events', 1, NULL, NULL),
 ('Teaching', 1, NULL, NULL),
 ('Weekly General Help', 1, NULL, NULL);
+
+
+
+
+ALTER TABLE `mod-market`.`messages`
+  ADD COLUMN `message_type` ENUM (
+    'text',
+    'image',
+    'video',
+    'link',
+    'emoji'
+  ) NULL AFTER `message`;
+

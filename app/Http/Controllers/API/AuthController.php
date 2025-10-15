@@ -31,6 +31,7 @@ class AuthController extends Controller
             'address' => $request->address ?? null,
             'cover_photo' => $request->cover_photo_url ?? null,
             'role' => 'user',
+            'fcm_token' => $request->fcm_token ?? null,
         ]);
 
         $user->assignRole('user');
@@ -47,7 +48,6 @@ class AuthController extends Controller
     }
     public function registerInspector(RegisterInspectorRequest $request)
     {
-        Log::info('Registering inspector', ['request' => $request->all()]);
         $user = new User($request->all());
         $user->password = Hash::make($request->password);
         $user->role = 'inspector';

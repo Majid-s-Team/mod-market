@@ -41,6 +41,11 @@ io.on("connection", (socket) => {
         socket.emit("receive_message", res.data.data);
         console.log(` Delivered unseen messages to ${user_id}`);
       }
+      const inboxRes = await axios.get(`${LARAVEL_API_URL}/api/socket/messages/inbox/${user_id}`);
+        if (inboxRes.data?.data?.length > 0) {
+          socket.emit("inbox_list", inboxRes.data.data);
+          console.log(` Sent inbox list to ${user_id}`);
+        }
     } catch (err) {
       console.log(" Failed to load unseen messages:", err.message);
     }

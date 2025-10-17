@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\InspectionRequest;
 use App\Models\InspectionReport;
 use App\Traits\ApiResponseTrait;
+use App\Helpers\NotificationHelper;
+
 
 class InspectionReportController extends Controller
 {
@@ -98,9 +100,11 @@ class InspectionReportController extends Controller
         }
         // dd($inspectionRequestId);
 
-        $inspectionRequest = InspectionRequest::where('id', $inspectionRequestId)
+        $inspectionRequest = InspectionRequest::with('vehicleAd')
+            ->where('id', $inspectionRequestId)
             ->where('inspector_id', $user->id)
             ->first();
+
 
         if (!$inspectionRequest) {
             return $this->apiError('Inspection request not found', [], 404);
@@ -125,6 +129,21 @@ class InspectionReportController extends Controller
     $reportWithPercentage = $report->toArray();
     $reportWithPercentage['average_score'] = ($report->average_score / 5) * 100;
     $reportWithPercentage['rating'] =round(num: $report->average_score);
+
+     NotificationHelper::sendTemplateNotification(
+                    $inspectionRequest->user_id,
+                    'inspectionReport',
+                    ['username' => $user->name],
+                    ['inspection_report_id'=>$report->id,'inspection_request_id' => $inspectionRequest->id,'status' => $inspectionRequest->status,'reason' => $inspectionRequest->reasons,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+                );
+
+     NotificationHelper::sendTemplateNotification(
+                    $inspectionRequest->vehicleAd->user_id,
+                    'reportToOwner',
+                    ['username' => $user->name],
+                    ['inspection_report_id'=>$report->id,'inspection_request_id' => $inspectionRequest->id,'status' => $inspectionRequest->status,'reason' => $inspectionRequest->reasons,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+                );
+
 
 
     return $this->apiResponse('Inspection report created', $reportWithPercentage);

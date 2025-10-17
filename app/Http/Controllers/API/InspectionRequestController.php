@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Validation\Rule;
+use App\Helpers\NotificationHelper;
+
 
 
 class InspectionRequestController extends Controller
@@ -130,6 +132,8 @@ public function tokenSelf(Request $request)
 public function updateRequestStatus(Request $request, $id)
 {
     $user = Auth::user();
+    $userName =auth()->user()->name;
+
 
     // ✅ validate request
     $validated = $request->validate([
@@ -149,6 +153,13 @@ public function updateRequestStatus(Request $request, $id)
     $inspectionRequest->status = $validated['status'];
     $inspectionRequest->reasons = $validated['reason'] ?? null;
     $inspectionRequest->save();
+
+     NotificationHelper::sendTemplateNotification(
+                    $inspectionRequest->user_id,
+                    'requestStatus',
+                    ['username' => $userName],
+                    ['inspection_request_id' => $inspectionRequest->id,'status' => $inspectionRequest->status,'reason' => $inspectionRequest->reasons,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+                );
 
     return $this->apiResponse('Inspection request status updated successfully.', [
         'inspection_request_id' => $inspectionRequest->id,
@@ -212,6 +223,13 @@ public function updateRequestStatus(Request $request, $id)
         $data['user_id'] = Auth::id();
         $data['status'] = 'pending';
         $data['payment_status'] = 'unpaid';
+$vehicle = VehicleAd::with('user')
+    ->where('id', $request->vehicle_ad_id)
+    ->first();
+
+        $userName =auth()->user()->name;
+        $user =auth()->user();
+
 
         if ($request->type === 'vendor') {
             $inspector = User::findOrFail($request->inspector_id);
@@ -252,9 +270,34 @@ public function updateRequestStatus(Request $request, $id)
             $data['payment_reference'] = $fakePaymentReference;
         } else {
             $data['payment_status'] = 'unpaid';
+
         }
 
         $inspection = InspectionRequest::create($data);
+        if($request->type === 'self'){
+        NotificationHelper::sendTemplateNotification(
+                    $vehicle->user_id,
+                    'selfInspection',
+                    ['username' => $userName],
+                    ['vehicle_ad_id' => $vehicle->id, 'inspection_request_id' => $inspection->id,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+                );
+            }
+            else{
+                NotificationHelper::sendTemplateNotification(
+                    $vehicle->user_id,
+                    'vendorInspection',
+                    ['username' => $userName],
+                    ['vehicle_ad_id' => $vehicle->id, 'inspection_request_id' => $inspection->id,'inspector_id'=>$request->inspector_id,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+                );
+
+                   NotificationHelper::sendTemplateNotification(
+                    $request->inspector_id,
+                    'toVendorInspection',
+                    ['username' => $userName],
+                    ['vehicle_ad_id' => $vehicle->id, 'inspection_request_id' => $inspection->id,'inspector_id'=>$request->inspector_id,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+                );
+
+            }
 
         return $this->apiResponse('Inspection request created.', $inspection);
     }

@@ -14,7 +14,9 @@ app.use(express.json());
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-const LARAVEL_API_URL = "https://modmarket.retrocubedev.com";
+// const LARAVEL_API_URL = "https://modmarket.retrocubedev.com";
+const LARAVEL_API_URL = "http://127.0.0.1:8000";
+
 let onlineUsers = new Map();
 
 io.on("connection", (socket) => {
@@ -53,7 +55,7 @@ io.on("connection", (socket) => {
 
   socket.on("send_message", async (rawData) => {
     let data = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
-    const { sender_id, receiver_id, message, message_type = "text", media_url } = data;
+    const { sender_id, receiver_id,vehicle_ad_id, message, message_type = "text", media_url } = data;
 
    if (!sender_id || !receiver_id || (!message && !media_url)) {
     socket.emit("error", {
@@ -71,6 +73,7 @@ io.on("connection", (socket) => {
       //   media_url
       // });
       const payload = { sender_id, receiver_id, message_type };
+      if (vehicle_ad_id) payload.vehicle_ad_id = vehicle_ad_id;
        if (message) payload.message = message;
 if (media_url) payload.media_url = media_url;
 
@@ -112,7 +115,7 @@ if (media_url) payload.media_url = media_url;
 
   socket.on("get_chat_history", async (rawData) => {
     let data = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
-    const { user_id, with_user_id } = data;
+    const { user_id, with_user_id,vehicle_ad_id } = data;
 
     if (!user_id || !with_user_id) {
       socket.emit("error", { message: "user_id and with_user_id are required" });

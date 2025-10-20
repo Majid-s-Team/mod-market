@@ -66,7 +66,7 @@ class NotificationTemplate
             ],
              'reviewRating' => [
                 'title' => 'New Review Added',
-'message' => ':username has rated your inspection report.',
+                'message' => ':username has rated your inspection report.',
             ]
 
         ];

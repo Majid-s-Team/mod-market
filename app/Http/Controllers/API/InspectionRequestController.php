@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Card;
 use App\Models\VehicleAd;
 use App\Models\InspectionReport;
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\ApiResponseTrait;
@@ -63,7 +64,6 @@ public function index(Request $request)
     $user = Auth::user();
     $perPage = $request->get('per_page', 10);
 
-    // Get paginated inspection requests
     $requests = InspectionRequest::with([
         'user',
         'city:id,name',
@@ -71,27 +71,37 @@ public function index(Request $request)
         'vehicleAd' => function ($query) {
             $query->with((new VehicleAd)->getAllRelations());
         },
-        'inspector' // 👈 Inspector relation eager load
+        'inspector',
+        'reviews:id,inspection_request_id,reviewer_id,reviewed_id'
     ])
     ->where('user_id', $user->id)
     ->orderByDesc('created_at')
     ->paginate($perPage);
 
-    // Transform the response
-    $requests->getCollection()->transform(function ($request) {
+    $requests->getCollection()->transform(function ($request) use ($user) {
         $request->completed_report_id = null;
+        $request->alreadyReviewed = false; // default
 
-        // Completed report id
+        // Completed report logic
         if ($request->status === 'completed') {
             $report = InspectionReport::where('inspection_request_id', $request->id)->first();
             $request->completed_report_id = $report ? $report->id : null;
+
+            // Already Reviewed check (only if completed)
+            $alreadyReviewed = $request->reviews->contains(function ($review) use ($user, $request) {
+                return $review->inspection_request_id == $request->id
+                    && $review->reviewer_id == $user->id
+                    && $review->reviewed_id == optional($request->inspector)->id;
+            });
+
+            $request->alreadyReviewed = $alreadyReviewed ? true : false;
         }
 
-        // Inspector object handle
+        //  Inspector object handle
         if ($request->type === 'vendor') {
-            $request->inspector = $request->inspector; // return relation object
+            $request->inspector = $request->inspector;
         } else {
-            $request->inspector = null; // agar self ho
+            $request->inspector = null;
         }
 
         return $request;
@@ -99,6 +109,7 @@ public function index(Request $request)
 
     return $this->apiPaginatedResponse('Inspection requests fetched.', $requests);
 }
+
 
 
 

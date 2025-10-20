@@ -60,4 +60,8 @@ class InspectionRequest extends Model
     {
         return $this->hasMany(InspectionReport::class, 'inspection_request_id');
     }
+    public function reviews()
+    {
+        return $this->hasMany(Review:: class, 'inspection_request_id');
+    }
 }

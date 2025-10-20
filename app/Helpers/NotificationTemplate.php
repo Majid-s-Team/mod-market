@@ -63,6 +63,10 @@ class NotificationTemplate
              'commentReplyPost' => [
                 'title' => 'Reply to comment Added',
                 'message' => ':username has just replied to a comment on your Forum Post.'
+            ],
+             'reviewRating' => [
+                'title' => 'New Review Added',
+'message' => ':username has rated your inspection report.',
             ]
 
         ];

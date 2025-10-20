@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Message;
+use App\Models\VehicleAd;
 use App\Models\User;
 use App\Traits\ApiResponseTrait;
 
@@ -17,6 +18,7 @@ class MessageController extends Controller
         $validated = $request->validate([
             'sender_id' => 'required|exists:users,id',
             'receiver_id' => 'required|exists:users,id',
+            'vehicle_ad_id' => 'nullable|exists:vehicle_ads,id',
             'message' => 'nullable|string',
             'message_type' => 'nullable|string|in:text,image,video,file,emoji,link',
             'media_url' => 'nullable|string',
@@ -29,6 +31,7 @@ class MessageController extends Controller
         $msg = Message::create([
             'sender_id' => $validated['sender_id'],
             'receiver_id' => $validated['receiver_id'],
+            'vehicle_ad_id' => $validated['vehicle_ad_id'] ?? null,
             'message' => $validated['message'] ?? '',
             'message_type' => $validated['message_type'] ?? 'text',
             'media_url' => $validated['media_url'] ?? '',
@@ -43,7 +46,7 @@ class MessageController extends Controller
 
     public function chatHistory($user1, $user2)
     {
-        $messages = Message::with(['sender:id,name,profile_image,email', 'receiver:id,name,profile_image,email'])
+        $messages = Message::with(['sender:id,name,profile_image,email', 'receiver:id,name,profile_image,email','vehicleAd'])
             ->where(function ($q) use ($user1, $user2) {
                 $q->where('sender_id', $user1)->where('receiver_id', $user2);
             })
@@ -58,7 +61,7 @@ class MessageController extends Controller
 
     public function unseenMessages($user_id)
     {
-        $messages = Message::with(['sender:id,name,profile_image,email', 'receiver:id,name,profile_image,email'])
+        $messages = Message::with(['sender:id,name,profile_image,email', 'receiver:id,name,profile_image,email','vehicleAd'])
             ->where('receiver_id', $user_id)
             ->where('status', 'sent')
             ->orderByDesc('created_at')
@@ -84,9 +87,9 @@ class MessageController extends Controller
     public function inbox($user_id)
     {
         $inbox = Message::selectRaw('
-                CASE 
-                    WHEN sender_id = ? THEN receiver_id 
-                    ELSE sender_id 
+                CASE
+                    WHEN sender_id = ? THEN receiver_id
+                    ELSE sender_id
                 END as chat_with_id,
                 MAX(created_at) as last_message_time
             ', [$user_id])
@@ -106,12 +109,19 @@ class MessageController extends Controller
                 ->latest()
                 ->first();
 
+    $unreadCount = Message::where('sender_id', $user_id)
+    ->where('receiver_id', $chat->chat_with_id)
+    ->where('status', '!=', 'read')
+    ->count();
+
                 return [
                     'chat_with' => $lastMsg->sender_id == $user_id ? $lastMsg->receiver : $lastMsg->sender,
                     'last_message' => $lastMsg->message,
                     'message_type' => $lastMsg->message_type ?? 'text',
                     'time' => $lastMsg->created_at->format('H:i'),
                     'date' => $lastMsg->created_at->format('Y-m-d'),
+                    'unreadCount'  => $unreadCount, // Added
+
                 ];
             });
 

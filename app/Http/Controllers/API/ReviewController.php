@@ -9,6 +9,8 @@ use App\Models\InspectionRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\ApiResponseTrait;
+use App\Helpers\NotificationHelper;
+
 
 class ReviewController extends Controller
 {
@@ -29,6 +31,8 @@ class ReviewController extends Controller
 
             $reviewerId = Auth::id();
             $inspection = InspectionRequest::with('vehicleAd')->find($request->inspection_request_id);
+            $user = Auth::user();
+
 
             if (!$inspection) {
                 return $this->apiError('Inspection request not found.', [], 404);
@@ -82,6 +86,12 @@ class ReviewController extends Controller
                 'rating' => $request->rating,
                 'comment' => $request->comment,
             ]);
+              NotificationHelper::sendTemplateNotification(
+                    $reviewedId,
+                    'reviewRating',
+                    ['username' => $user->name],
+                    ['inspection_request_id'=>$inspection->id,'rating' => $request->rating,'comment'=>$request->comment,'reviewer_id' => $reviewerId,'reviewed_id' => $reviewedId,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+                );
 
             return $this->apiResponse('Review added successfully.', $review->load('reviewer', 'reviewed'), 201);
         } catch (\Exception $e) {

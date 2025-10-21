@@ -60,3 +60,11 @@ ALTER TABLE `mod-market`.`messages`
     'emoji'
   ) NULL AFTER `message`;
 
+
+ALTER TABLE `messages`
+ADD COLUMN `vehicle_ad_id` BIGINT UNSIGNED NULL AFTER `receiver_id`,
+ADD CONSTRAINT `messages_vehicle_ad_id_foreign`
+FOREIGN KEY (`vehicle_ad_id`) REFERENCES `vehicle_ads`(`id`)
+ON DELETE SET NULL ON UPDATE CASCADE;
+
+ 

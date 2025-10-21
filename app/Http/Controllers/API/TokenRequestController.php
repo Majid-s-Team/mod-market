@@ -9,6 +9,8 @@ use App\Models\Card;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\ApiResponseTrait;
+use App\Helpers\NotificationHelper;
+
 
 class TokenRequestController extends Controller
 {
@@ -24,6 +26,7 @@ class TokenRequestController extends Controller
     ]);
 
     $vehicleAd = VehicleAd::findOrFail($request->vehicle_ad_id);
+    $user = Auth::user();
 
     if ($vehicleAd->user_id == Auth::id()) {
         return $this->apiError('You cannot send a token request to your own ad.', [], 403);
@@ -70,6 +73,13 @@ class TokenRequestController extends Controller
         'card_id'       => $card->id, // save card_id too
     ]);
 
+     NotificationHelper::sendTemplateNotification(
+                    $vehicleAd->user_id,
+                    'tokenRequest',
+                    ['username' => $user->name],
+                    ['token_request_id'=>$tokenRequest->id,'vehicle_ad_id' => $tokenRequest->vehicle_ad_id,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+                );
+
     return $this->apiResponse('Token request sent successfully.', $tokenRequest, 201);
 }
 
@@ -77,6 +87,8 @@ class TokenRequestController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $tokenRequest = TokenRequest::findOrFail($id);
+            $user = Auth::user();
+
 
         if ($tokenRequest->seller_id != Auth::id()) {
             return $this->apiError('You are not authorized to update this request.', [], 403);
@@ -113,6 +125,14 @@ class TokenRequestController extends Controller
         $msg = $request->status === 'approved'
             ? 'Request approved successfully.'
             : 'Request rejected successfully.';
+
+             NotificationHelper::sendTemplateNotification(
+                    $tokenRequest->buyer_id,
+                    'tokenStatus',
+                    ['username' => $user->name],
+                    ['token_request_id'=>$tokenRequest->id,'reject_reason'=>$tokenRequest->reject_reason,'status'=>$tokenRequest->status,'vehicle_ad_id' => $tokenRequest->vehicle_ad_id,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+                );
+
 
         return $this->apiResponse($msg, $tokenRequest);
     }

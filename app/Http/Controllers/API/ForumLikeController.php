@@ -15,6 +15,8 @@ class ForumLikeController extends Controller
     public function toggleLike($postId)
     {
         $post = ForumPost::find($postId);
+            $user = Auth::user();
+
 
         if (!$post) {
             return $this->apiError('Forum post not found', [], 404);
@@ -39,7 +41,7 @@ class ForumLikeController extends Controller
                     $post->user_id,
                     'forum_like',
                     ['username' => $userName],
-                    ['post_id' => $post->id, 'liked_by' => $userId]
+                    ['post_id' => $post->id, 'liked_by' => $userId,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
                 );
             }
 

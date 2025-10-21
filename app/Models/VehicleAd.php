@@ -190,6 +190,10 @@ public function tokenRequests()
     return $this->hasMany(TokenRequest::class, 'vehicle_ad_id');
 }
 
+public function messages()
+{
+    return $this->hasMany(Message::class, 'vehicle_ad_id');
+}
 
 
 }

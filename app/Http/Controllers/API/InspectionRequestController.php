@@ -8,10 +8,13 @@ use App\Models\User;
 use App\Models\Card;
 use App\Models\VehicleAd;
 use App\Models\InspectionReport;
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Validation\Rule;
+use App\Helpers\NotificationHelper;
+
 
 
 class InspectionRequestController extends Controller
@@ -61,7 +64,6 @@ public function index(Request $request)
     $user = Auth::user();
     $perPage = $request->get('per_page', 10);
 
-    // Get paginated inspection requests
     $requests = InspectionRequest::with([
         'user',
         'city:id,name',
@@ -69,27 +71,37 @@ public function index(Request $request)
         'vehicleAd' => function ($query) {
             $query->with((new VehicleAd)->getAllRelations());
         },
-        'inspector' // 👈 Inspector relation eager load
+        'inspector',
+        'reviews:id,inspection_request_id,reviewer_id,reviewed_id'
     ])
     ->where('user_id', $user->id)
     ->orderByDesc('created_at')
     ->paginate($perPage);
 
-    // Transform the response
-    $requests->getCollection()->transform(function ($request) {
+    $requests->getCollection()->transform(function ($request) use ($user) {
         $request->completed_report_id = null;
+        $request->alreadyReviewed = false; // default
 
-        // Completed report id
+        // Completed report logic
         if ($request->status === 'completed') {
             $report = InspectionReport::where('inspection_request_id', $request->id)->first();
             $request->completed_report_id = $report ? $report->id : null;
+
+            // Already Reviewed check (only if completed)
+            $alreadyReviewed = $request->reviews->contains(function ($review) use ($user, $request) {
+                return $review->inspection_request_id == $request->id
+                    && $review->reviewer_id == $user->id
+                    && $review->reviewed_id == optional($request->inspector)->id;
+            });
+
+            $request->alreadyReviewed = $alreadyReviewed ? true : false;
         }
 
-        // Inspector object handle
+        //  Inspector object handle
         if ($request->type === 'vendor') {
-            $request->inspector = $request->inspector; // return relation object
+            $request->inspector = $request->inspector;
         } else {
-            $request->inspector = null; // agar self ho
+            $request->inspector = null;
         }
 
         return $request;
@@ -97,6 +109,7 @@ public function index(Request $request)
 
     return $this->apiPaginatedResponse('Inspection requests fetched.', $requests);
 }
+
 
 
 
@@ -130,6 +143,8 @@ public function tokenSelf(Request $request)
 public function updateRequestStatus(Request $request, $id)
 {
     $user = Auth::user();
+    $userName =auth()->user()->name;
+
 
     // ✅ validate request
     $validated = $request->validate([
@@ -149,6 +164,13 @@ public function updateRequestStatus(Request $request, $id)
     $inspectionRequest->status = $validated['status'];
     $inspectionRequest->reasons = $validated['reason'] ?? null;
     $inspectionRequest->save();
+
+     NotificationHelper::sendTemplateNotification(
+                    $inspectionRequest->user_id,
+                    'requestStatus',
+                    ['username' => $userName],
+                    ['inspection_request_id' => $inspectionRequest->id,'status' => $inspectionRequest->status,'reason' => $inspectionRequest->reasons,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+                );
 
     return $this->apiResponse('Inspection request status updated successfully.', [
         'inspection_request_id' => $inspectionRequest->id,
@@ -212,6 +234,13 @@ public function updateRequestStatus(Request $request, $id)
         $data['user_id'] = Auth::id();
         $data['status'] = 'pending';
         $data['payment_status'] = 'unpaid';
+$vehicle = VehicleAd::with('user')
+    ->where('id', $request->vehicle_ad_id)
+    ->first();
+
+        $userName =auth()->user()->name;
+        $user =auth()->user();
+
 
         if ($request->type === 'vendor') {
             $inspector = User::findOrFail($request->inspector_id);
@@ -252,9 +281,34 @@ public function updateRequestStatus(Request $request, $id)
             $data['payment_reference'] = $fakePaymentReference;
         } else {
             $data['payment_status'] = 'unpaid';
+
         }
 
         $inspection = InspectionRequest::create($data);
+        if($request->type === 'self'){
+        NotificationHelper::sendTemplateNotification(
+                    $vehicle->user_id,
+                    'selfInspection',
+                    ['username' => $userName],
+                    ['vehicle_ad_id' => $vehicle->id, 'inspection_request_id' => $inspection->id,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+                );
+            }
+            else{
+                NotificationHelper::sendTemplateNotification(
+                    $vehicle->user_id,
+                    'vendorInspection',
+                    ['username' => $userName],
+                    ['vehicle_ad_id' => $vehicle->id, 'inspection_request_id' => $inspection->id,'inspector_id'=>$request->inspector_id,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+                );
+
+                   NotificationHelper::sendTemplateNotification(
+                    $request->inspector_id,
+                    'toVendorInspection',
+                    ['username' => $userName],
+                    ['vehicle_ad_id' => $vehicle->id, 'inspection_request_id' => $inspection->id,'inspector_id'=>$request->inspector_id,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+                );
+
+            }
 
         return $this->apiResponse('Inspection request created.', $inspection);
     }

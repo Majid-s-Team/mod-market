@@ -106,5 +106,76 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(Notification::class, 'user_id');
     }
 
+    public static function socialUser(array $params)
+{
+    // 1️⃣ Check user by platform info
+    $user = User::where('platform_type', $params['platform_type'] ?? null)
+        ->where('platform_id', $params['platform_id'] ?? null)
+        ->whereNull('deleted_at')
+        ->first();
+
+        // dd(vars: $user);
+
+    // If not found, check by email (for Google usually)
+    if (!$user && !empty($params['email'])) {
+        $user = User::where('email', $params['email'])
+            ->whereNull('deleted_at')
+            ->first();
+    }
+
+    //  Handle image (optional)
+    // $uploadedImagePath = null;
+    // if (!empty($params['image_url'])) {
+    //     try {
+    //         $imageContent = @file_get_contents($params['image_url']);
+    //         if ($imageContent) {
+    //             $filename = 'users/' . uniqid('social_') . '.jpg';
+    //             Storage::disk('public')->put($filename, $imageContent);
+    //             $uploadedImagePath = 'storage/' . $filename;
+    //         }
+    //     } catch (\Exception $e) {
+    //         // Ignore image download failures silently
+    //     }
+    // }
+
+    // 4️⃣ Create new user if not found
+    if (!$user) {
+        $password = Str::random(10);
+
+        $user = User::create([
+            'role'   => $params['role'],
+            'name'      => $params['name'],
+            'email'           => $params['email'] ?? null,
+            'password'        => Hash::make($password),
+            'contact_no'       => $params['contact_no'] ?? null,
+            'profile_image'       => $params['profile_image'],
+            'platform_type'   => $params['platform_type'],
+            'platform_id'     => $params['platform_id'],
+            'device_type'     => $params['device_type'] ?? null,
+            'device_token'    => $params['device_token'] ?? null,
+            'is_term_accept'          => $params['is_term_accept'],
+            'created_at'      => Carbon::now(),
+        ]);
+    }
+    else {
+        // 5️⃣ Update user fields if already exists
+        $updateData = [
+            'name'         => $params['name'] ?? $user->name,
+            'email'        => $params['email'] ?? $user->email,
+            'profile_image'    => $params['profile_image'] ?? $user->profile_image,
+            'device_type'  => $params['device_type'] ?? $user->device_type,
+            'device_token' => $params['device_token'] ?? $user->device_token,
+            'updated_at'   => Carbon::now(),
+        ];
+
+        $user->update($updateData);
+    }
+
+    // 6️⃣ Return minimal object
+    return (object) [
+        'id'          => $user->id,
+        'created_at'  => $user->created_at,
+    ];
+}
 
 }

@@ -97,6 +97,7 @@ class MessageController extends Controller
                 $q->where('sender_id', $user_id)->orWhere('receiver_id', $user_id);
             })
             ->groupBy('chat_with_id')
+             ->orderByDesc('last_message_time')
             ->with(['sender:id,name,profile_image,email', 'receiver:id,name,profile_image,email'])
             ->get()
             ->map(function ($chat) use ($user_id) {

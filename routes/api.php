@@ -37,6 +37,7 @@ use App\Http\Controllers\API\PushNotificationController;
 Route::post('register/user', [AuthController::class, 'registerUser']);
 Route::post('register/inspector', [AuthController::class, 'registerInspector']);
 Route::post('login', [AuthController::class, 'login']);
+Route::post('socialLogin', [AuthController::class, 'socialLogin']);
 Route::get('/all-users/{id?}', [AuthController::class, 'getUsers']);
 
 // Password Recovery Flow
@@ -201,10 +202,10 @@ Route::put('inspection-requests/{id}/statusUpdate', [InspectionRequestController
     Route::get('/earnings-investments', [InspectionReportController::class, 'earningsOrInvestments']);
 
 
-    Route::post('/reviews', [ReviewController::class, 'store']);           
-    Route::get('/reviews/{id}', [ReviewController::class, 'userReviews']); 
-    Route::put('/reviews/{id}', [ReviewController::class, 'update']);    
-    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']); 
+    Route::post('/reviews', [ReviewController::class, 'store']);
+    Route::get('/reviews/{id}', [ReviewController::class, 'userReviews']);
+    Route::put('/reviews/{id}', [ReviewController::class, 'update']);
+    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
 
 });
 

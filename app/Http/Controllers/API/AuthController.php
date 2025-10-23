@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Log;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Traits\ApiResponseTrait;
+use Illuminate\Support\Facades\Validator;
 
 
 class AuthController extends Controller
@@ -126,7 +127,7 @@ class AuthController extends Controller
     ]);
 
     if ($validator->fails()) {
-        return $this->sendError('Validation Error', $validator->errors()->all(), 422);
+        return $this->apiResponse('Validation Error', $validator->errors()->all(), 422);
     }
 
     $params = $validator->validated();
@@ -134,14 +135,13 @@ class AuthController extends Controller
     // Try finding existing user
     $user = User::where('platform_type', $params['platform_type'])
         ->where('platform_id', $params['platform_id'])
-        ->whereNull('deleted_at')
         ->first();
 
         // dd(vars: $user);
 
     // Apple case: no email provided
     if (empty($user) && empty($params['email'])&& $params['device_type']=='ios') {
-        return $this->sendError(
+        return $this->apiResponse(
             'The current information is incomplete. Please go to Settings > Apple ID > Password & Security > Sign in with Apple, remove the app, and sign in again.',
             [],
             400
@@ -153,20 +153,23 @@ class AuthController extends Controller
     $user = User::find($userData->id);
 
     // Check if user is inactive
-    if (!$user->is_active) {
-        return $this->sendError('Account is deactivated. Please contact support.', [], 403);
-    }
+    // if (!$user->is_active) {
+    //     return $this->apiResponse('Account is deactivated. Please contact support.', [], 403);
+    // }
 
     // Generate new API token
-    $user->tokens()->delete(); // optional: remove old tokens
-    $token = $user->createToken('API Token')->plainTextToken;
+   $token = JWTAuth::fromUser($user);
 
+return $this->apiResponse('Social login successful', [
+    'access_token' => $token,
+    'user' => $user,
+]);
     // Update device_token if provided
     if (!empty($params['device_token'])) {
         $user->update(['device_token' => $params['device_token']]);
     }
 
-    return $this->sendResponse('Social login successful', [
+    return $this->apiResponse('Social login successful', [
         'token' => $token,
         'user'  => $user,
     ]);

@@ -1,4 +1,4 @@
-ALTER TABLE `mod-market`.`cards`   
+ALTER TABLE `mod-market`.`cards`
 	CHANGE `card_holder` `card_holder` VARCHAR(255) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
 	CHANGE `card_number` `card_number` VARCHAR(255) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
 	CHANGE `expiry_month` `expiry_month` VARCHAR(255) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
@@ -67,4 +67,11 @@ ADD CONSTRAINT `messages_vehicle_ad_id_foreign`
 FOREIGN KEY (`vehicle_ad_id`) REFERENCES `vehicle_ads`(`id`)
 ON DELETE SET NULL ON UPDATE CASCADE;
 
- 
+
+
+ALTER TABLE `users`
+  ADD COLUMN `platform_id` VARCHAR(255) NULL AFTER `email`,
+  ADD COLUMN `platform_type` ENUM('facebook','google','apple') NOT NULL AFTER `platform_id`,
+  ADD COLUMN `device_type` ENUM('android','ios','web') NOT NULL AFTER `platform_type`,
+  ADD COLUMN `device_token` VARCHAR(255) NULL AFTER `device_type`;
+

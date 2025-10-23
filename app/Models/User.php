@@ -9,6 +9,12 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
+
+
+
 
 
 
@@ -22,6 +28,10 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'company_name',
         'email',
+        'platform_id',
+        'platform_type',
+        'device_type',
+        'device_token',
         'latitude',
         'longitude',
         'contact_number',
@@ -111,7 +121,6 @@ class User extends Authenticatable implements JWTSubject
     // 1️⃣ Check user by platform info
     $user = User::where('platform_type', $params['platform_type'] ?? null)
         ->where('platform_id', $params['platform_id'] ?? null)
-        ->whereNull('deleted_at')
         ->first();
 
         // dd(vars: $user);
@@ -119,7 +128,6 @@ class User extends Authenticatable implements JWTSubject
     // If not found, check by email (for Google usually)
     if (!$user && !empty($params['email'])) {
         $user = User::where('email', $params['email'])
-            ->whereNull('deleted_at')
             ->first();
     }
 
@@ -142,6 +150,8 @@ class User extends Authenticatable implements JWTSubject
     if (!$user) {
         $password = Str::random(10);
 
+        // dd($params['device_token']);
+
         $user = User::create([
             'role'   => $params['role'],
             'name'      => $params['name'],
@@ -153,9 +163,11 @@ class User extends Authenticatable implements JWTSubject
             'platform_id'     => $params['platform_id'],
             'device_type'     => $params['device_type'] ?? null,
             'device_token'    => $params['device_token'] ?? null,
-            'is_term_accept'          => $params['is_term_accept'],
+            'is_term_accept'   => $params['is_term_accept'],
             'created_at'      => Carbon::now(),
         ]);
+// dd($user);
+
     }
     else {
         // 5️⃣ Update user fields if already exists

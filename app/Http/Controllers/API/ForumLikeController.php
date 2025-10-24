@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\ForumPost;
 use App\Traits\ApiResponseTrait;
+use Illuminate\Support\Facades\Auth;
 use App\Helpers\NotificationHelper;
 
 class ForumLikeController extends Controller

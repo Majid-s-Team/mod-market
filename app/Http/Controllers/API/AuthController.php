@@ -86,11 +86,13 @@ class AuthController extends Controller
     {
         $request->validate([
             'login' => 'required',
-            'password' => 'required'
+            'password' => 'required',
+            'role' => 'required'
         ]);
 
         $loginInput = $request->login;
         $password = $request->password;
+        $role =$request->role;
 
 
         $user = User::where('email', $loginInput)
@@ -98,6 +100,9 @@ class AuthController extends Controller
             ->first();
 
         if (!$user || !Hash::check($password, $user->password)) {
+            return response()->json(['error' => 'Invalid credentials'], 422);
+        }
+        if ($user->role !== $role){
             return response()->json(['error' => 'Invalid credentials'], 422);
         }
 

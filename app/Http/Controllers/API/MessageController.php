@@ -8,6 +8,8 @@ use App\Models\Message;
 use App\Models\VehicleAd;
 use App\Models\User;
 use App\Traits\ApiResponseTrait;
+use App\Helpers\NotificationHelper;
+
 
 class MessageController extends Controller
 {
@@ -15,6 +17,7 @@ class MessageController extends Controller
 
     public function socketStore(Request $request)
     {
+    $user = Auth::user();
         $validated = $request->validate([
             'sender_id' => 'required|exists:users,id',
             'receiver_id' => 'required|exists:users,id',
@@ -39,6 +42,14 @@ class MessageController extends Controller
         ]);
 
         $msg->load(['sender:id,name,profile_image,email', 'receiver:id,name,profile_image,email']);
+
+         NotificationHelper::sendTemplateNotification(
+                    $validated['sender_id'],
+                    'messageReceived',
+                    ['username' => $user->name],
+                    ['sender_id'=>$validated['sender_id'],'receiver_id'=> $validated['receiver_id'],'vehicle_ad_id'=>$validated['vehicle_ad_id'],'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+                );
+
 
         return $this->apiResponse('Message sent successfully', $msg, 201);
     }

@@ -1,5 +1,6 @@
 const express = require("express");
-const http = require("http");
+//const http = require("http");
+const https = require("https");
 const { Server } = require("socket.io");
 const axios = require("axios");
 const cors = require("cors");
@@ -11,9 +12,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const options = {
+  key: fs.readFileSync("/home/retrocubedev/ssl/combined.pem"),
+  cert: fs.readFileSync("/home/retrocubedev/ssl/cert.pem"),
+};
 
+
+//const server = http.createServer(app);
+const server = https.createServer(options, app);
+//const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
 const LARAVEL_API_URL = "https://modmarket.retrocubedev.com";
 
 let onlineUsers = new Map();

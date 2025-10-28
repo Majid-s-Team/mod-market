@@ -68,9 +68,13 @@ class NotificationTemplate
                 'title' => 'New Review Added',
                 'message' => ':username has rated your inspection report.',
             ]
+            ,
+             'messageReceived' => [
+                'title' => 'New Message',
+                'message' => ':username has just sent you a message.',
+            ]
 
         ];
-
 
 
         if (!isset($templates[$key])) {

@@ -137,12 +137,12 @@ class InspectionReportController extends Controller
                     ['inspection_report_id'=>$report->id,'inspection_request_id' => $inspectionRequest->id,'status' => $inspectionRequest->status,'reason' => $inspectionRequest->reasons,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
                 );
 
-     NotificationHelper::sendTemplateNotification(
-                    $inspectionRequest->vehicleAd->user_id,
-                    'reportToOwner',
-                    ['username' => $user->name],
-                    ['inspection_report_id'=>$report->id,'inspection_request_id' => $inspectionRequest->id,'status' => $inspectionRequest->status,'reason' => $inspectionRequest->reasons,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
-                );
+    //  NotificationHelper::sendTemplateNotification(
+    //                 $inspectionRequest->vehicleAd->user_id,
+    //                 'reportToOwner',
+    //                 ['username' => $user->name],
+    //                 ['inspection_report_id'=>$report->id,'inspection_request_id' => $inspectionRequest->id,'status' => $inspectionRequest->status,'reason' => $inspectionRequest->reasons,'user_id'=>$user->id,'name'=>$user->name,'role'=>$user->role,'profile_image'=>$user->profile_image]
+    //             );
 
 
 

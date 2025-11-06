@@ -121,10 +121,10 @@ class MessageController extends Controller
                 ->latest()
                 ->first();
 
-    $unreadCount = Message::where('sender_id', $user_id)
-    ->where('receiver_id', $chat->chat_with_id)
-    ->where('status', '!=', 'read')
-    ->count();
+    $unreadCount = Message::where('receiver_id', $user_id)
+                ->where('sender_id', $chat->chat_with_id)
+                ->where('status', '!=', 'read')
+                ->count();
 
                 return [
                     'chat_with' => $lastMsg->sender_id == $user_id ? $lastMsg->receiver : $lastMsg->sender,

@@ -24,6 +24,8 @@ const io = new Server(server, {
 
 const LARAVEL_API_URL = "https://modmarket.retrocubedev.com";
 let onlineUsers = new Map();
+
+// user_id -> Set(of with_user_ids)
 let activeChats = new Map();
 
 io.on("connection", (socket) => {
@@ -69,17 +71,10 @@ io.on("connection", (socket) => {
     }
 
     try {
-      // SAFE PAYLOAD BUILDING
-      const payload = {
-        sender_id,
-        receiver_id,
-        message_type,
-      };
+      const payload = { sender_id, receiver_id, message_type };
       if (vehicle_ad_id) payload.vehicle_ad_id = vehicle_ad_id;
-      if (message && message.trim() !== "") payload.message = message;
+      if (message) payload.message = message;
       if (media_url) payload.media_url = media_url;
-
-      console.log("Sending payload to Laravel:", payload);
 
       // Save message
       const response = await axios.post(`${LARAVEL_API_URL}/api/socket/messages`, payload);
@@ -130,7 +125,6 @@ io.on("connection", (socket) => {
         });
       }
     } catch (err) {
-      console.log("Error in send_message:", err.message);
       socket.emit("error", { message: "Failed to send message" });
     }
   });

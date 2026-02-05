@@ -7,6 +7,7 @@ use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\ApiResponseTrait;
+use App\Helpers\NotificationHelper;
 
 class NotificationController extends Controller
 {
@@ -67,4 +68,16 @@ class NotificationController extends Controller
     }
     // NotificationHelper::sendNotification($userId, 'Title', 'Message', 'type', ['extra' => 'data']);
 
+
+    public function testNotification()
+    {
+        NotificationHelper::sendFcmNotification(0, 'Test', 'Like Forum', 'forum_like', [
+            'post_id' => 101,
+            'liked_by' => 202,
+            'user_id' => 303,
+            'name' => 'John Doe',
+            'role' => 'Admin',
+            'profile_image' => 'https://example.com/images/john_doe.jpg'
+        ]);
+    }
 }

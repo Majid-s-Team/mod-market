@@ -34,6 +34,7 @@ use App\Http\Controllers\API\PushNotificationController;
 */
 
 // User Registration and Login
+Route::get('test-notify',[NotificationController::class,'testNotification'])->name('test-notify');
 Route::post('register/user', [AuthController::class, 'registerUser']);
 Route::post('register/inspector', [AuthController::class, 'registerInspector']);
 Route::post('login', [AuthController::class, 'login']);

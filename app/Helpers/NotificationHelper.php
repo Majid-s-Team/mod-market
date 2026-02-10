@@ -83,8 +83,13 @@ class NotificationHelper
 
     public static  function  sendFcmNotification($userIds, $title, $message, $type, $data)
     {
-        $tokens = ['ek7m45vTdEoDsCrW531L8N:APA91bGdWNXsLnxO6mbMLRstWPwZOfchfXQi6kWCugc7rVaa2vxyHKRNyZP7KS_lysBr95gxFO8HOljQc4RSA2llqgYjAB7MLvGpGlPAzX4X4a1makv6Ehk'];
+        // $tokens = ['ek7m45vTdEoDsCrW531L8N:APA91bGdWNXsLnxO6mbMLRstWPwZOfchfXQi6kWCugc7rVaa2vxyHKRNyZP7KS_lysBr95gxFO8HOljQc4RSA2llqgYjAB7MLvGpGlPAzX4X4a1makv6Ehk'];
+ $userIds = is_array($userIds) ? $userIds : [$userIds];
 
+        $tokens = User::whereIn('id', $userIds)
+            ->whereNotNull('device_token')
+            ->pluck('device_token')
+            ->toArray();
 
         $notification_data = [
             'notification' => [
@@ -97,6 +102,7 @@ class NotificationHelper
             'data' => [
                 'title' => $title, 
                 'body'  => $message, 
+                'type'  => $type,
                 'user_badge'  => 3,
                 'custom_data' => json_encode($data),
             ]

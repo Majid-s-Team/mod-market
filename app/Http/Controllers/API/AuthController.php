@@ -87,7 +87,9 @@ class AuthController extends Controller
         $request->validate([
             'login' => 'required',
             'password' => 'required',
-            'role' => 'required'
+            'role' => 'required',
+            'device_token' => 'required',
+
         ]);
 
         $loginInput = $request->login;
@@ -107,7 +109,7 @@ class AuthController extends Controller
         }
 
         $token = JWTAuth::fromUser($user);
-
+        User::where('id', $user->id)->update(['device_token' => $request->device_token]);
         return $this->apiResponse('Login successful', [
             'access_token' => $token,
             'user' => $user,

@@ -15,6 +15,7 @@ class CardController extends Controller
 
     public function index()
     {
+
         $cards = Card::where('user_id', Auth::id())->latest()->get();
         return $this->apiResponse('Cards fetched successfully', $cards);
     }
@@ -152,18 +153,28 @@ class CardController extends Controller
 
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
         $customer_id = Auth::user()->gateway_customer_id;
-        $card = $stripe->customers->createSource(
-            $customer_id,
-            ['source' => $request->token]
-        );
-        Card::create([
+        try {
+            $card = $stripe->customers->createSource(
+                $customer_id,
+                ['source' => $request->token]
+            );
+        } catch (\Exception $e) {
+            return $this->apiError('Failed to create card in Stripe: ' . $e->getMessage(), [], 500);
+        }
+        $card = Card::create([
             'user_id' => Auth::id(),
+            'card_id' => $card->id,
             'type' => 'card',
             'card_holder' => $card->name ?? null,
             'card_number' => '**** **** **** ' . substr($card->last4, -4),
             'expiry_month' => $card->exp_month ?? null,
             'expiry_year' => $card->exp_year ?? null,
+            'brand' => $card->brand ?? null,
         ]);
+        $cards_count = Card::where('user_id', Auth::id())->whereNotNull('card_id')->count();
+        if ($cards_count === 1) {
+            $this->setDefaultCard($card->id);
+        }
         return $this->apiResponse('Stripe card created successfully');
     }
 
@@ -174,12 +185,15 @@ class CardController extends Controller
         if (!$card) {
             return $this->apiError('Card not found', [], 404);
         }
+          if ($card->is_default) {
+            return $this->apiError('Cannot delete default card', [], 400);
+        }
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
         $customer_id = Auth::user()->gateway_customer_id;
         try {
             $stripe->customers->deleteSource(
                 $customer_id,
-                $card->stripe_card_id
+                $card->card_id
             );
         } catch (\Exception $e) {
             return $this->apiError('Failed to delete card from Stripe: ' . $e->getMessage(), [], 500);
@@ -193,6 +207,9 @@ class CardController extends Controller
     public function listStripeCards()
     {
         $stripecards = Card::where('user_id', Auth::id())->whereNotNull('stripe_card_id')->get();
+        if ($stripecards->isEmpty()) {
+            return $this->apiResponse('No Stripe cards found', [], 404);
+        }
         return $this->apiResponse('Stripe cards fetched successfully', $stripecards);
     }
 
@@ -205,16 +222,43 @@ class CardController extends Controller
             return $this->apiError('Card not found', [], 404);
         }
 
-       $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
         $customer_id = Auth::user()->gateway_customer_id;
         try {
             $stripe->customers->update(
                 $customer_id,
-                ['default_source' => $card->stripe_card_id]
-            );      
-        $card->is_default = true;
-        $card->save();
+                ['default_source' => $card->card_id]
+            );
+            $card->is_default = true;
+            $card->save();
+        } catch (\Exception $e) {
+            return $this->apiError('Failed to set default card in Stripe: ' . $e->getMessage(), [], 500);
+        }
 
+        Card::where('user_id', Auth::id())->where('id', '!=', $id)->update(['is_default' => false]);
         return $this->apiResponse('Default card set successfully', $card);
+    }
+
+    public function generateConnectAccountLink()
+    {
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        $connect_account_id = Auth::user()->gateway_connect_id;
+
+        if (!$connect_account_id) {
+            return $this->apiError('Connect account not found', [], 404);
+        }
+
+        try {
+            $accountLink = $stripe->accountLinks->create([
+                'account' => $connect_account_id,
+                'refresh_url' => url('/api/stripe/connect/refresh'),
+                'return_url' => url('/api/stripe/connect/return'),
+                'type' => 'account_onboarding',
+            ]);
+        } catch (\Exception $e) {
+            return $this->apiError('Failed to generate connect account link: ' . $e->getMessage(), [], 500);
+        }
+
+        return $this->apiResponse('Connect account link generated successfully', ['url' => $accountLink->url]);
     }
 }

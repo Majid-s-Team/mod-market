@@ -84,7 +84,7 @@ class NotificationHelper
     public static  function  sendFcmNotification($userIds, $title, $message, $type, $data)
     {
         // $tokens = ['ek7m45vTdEoDsCrW531L8N:APA91bGdWNXsLnxO6mbMLRstWPwZOfchfXQi6kWCugc7rVaa2vxyHKRNyZP7KS_lysBr95gxFO8HOljQc4RSA2llqgYjAB7MLvGpGlPAzX4X4a1makv6Ehk'];
- $userIds = is_array($userIds) ? $userIds : [$userIds];
+        $userIds = is_array($userIds) ? $userIds : [$userIds];
 
         $tokens = User::whereIn('id', $userIds)
             ->whereNotNull('device_token')
@@ -93,15 +93,15 @@ class NotificationHelper
 
         $notification_data = [
             'notification' => [
-                'title'    => $title, 
+                'title'    => $title,
                 'body'     => $message,
-                'sound'    => 'default', 
+                'sound'    => 'default',
                 // 'badge'    => 3, 
                 // 'priority' => 'high', 
             ],
             'data' => [
-                'title' => $title, 
-                'body'  => $message, 
+                'title' => $title,
+                'body'  => $message,
                 'type'  => $type,
                 'user_badge'  => 3,
                 'custom_data' => json_encode($data),
@@ -109,36 +109,33 @@ class NotificationHelper
         ];
 
         $firebase = (new Factory)
-        ->withServiceAccount(public_path('moddedmarket-8f439-firebase-adminsdk-fbsvc-dea29aa2c8.json'));
+            ->withServiceAccount(public_path('moddedmarket-8f439-firebase-adminsdk-fbsvc-dea29aa2c8.json'));
 
         $messaging = $firebase->createMessaging();
         $config = ApnsConfig::fromArray([
             'payload' => [
                 'aps' => [
-                    'badge' =>$notification_data['notification']['badge'],
+                    'badge' => $notification_data['notification']['badge'],
                     'sound' => 'noti.wav',
                 ],
             ],
         ]);
         $android = AndroidConfig::fromArray([
-           
+
             'priority' => 'normal',
-            'notification' => [ 
+            'notification' => [
                 'sound' => 'noti.wav',
             ],
         ]);
         $message = CloudMessage::fromArray($notification_data);
-        $message=$message->withApnsConfig($config)->withAndroidConfig($android);
+        $message = $message->withApnsConfig($config)->withAndroidConfig($android);
         $report = $messaging->sendMulticast($message, $tokens);
         if ($report->hasFailures()) {
             $error_msg = '';
             foreach ($report->failures()->getItems() as $failure) {
-                $error_msg .= $failure->error()->getMessage().PHP_EOL;
+                $error_msg .= $failure->error()->getMessage() . PHP_EOL;
             }
             // file_put_contents(base_path('notification-error.txt'),$error_msg);
         }
-    
-
-       
     }
 }

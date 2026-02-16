@@ -18,6 +18,9 @@ return new class extends Migration {
             $table->string('expiry_month');
             $table->string('expiry_year');
             $table->string('cvv');
+            $table->string('card_id')->nullable();
+            $table->tinyInteger('is_default')->default(0);
+            $table->string('brand')->nullable();
             $table->timestamps();
         });
     }

@@ -21,21 +21,24 @@ class Card extends Model
         'account_number',
         'bank_name',
         'branch_name',
-        'ifsc_code'
+        'ifsc_code',
+        'card_id',
+        'is_default',
+        'brand',
     ];
 
-    protected $casts = [
-        'card_holder' => 'encrypted',
-        'card_number' => 'encrypted',
-        'expiry_month' => 'encrypted',
-        'expiry_year' => 'encrypted',
-        'cvv' => 'encrypted',
-        'account_holder' => 'encrypted',
-        'account_number' => 'encrypted',
-        'bank_name' => 'encrypted',
-        'branch_name' => 'encrypted',
-        'ifsc_code' => 'encrypted',
-    ];
+    // protected $casts = [
+    //     'card_holder' => 'encrypted',
+    //     'card_number' => 'encrypted',
+    //     'expiry_month' => 'encrypted',
+    //     'expiry_year' => 'encrypted',
+    //     'cvv' => 'encrypted',
+    //     'account_holder' => 'encrypted',
+    //     'account_number' => 'encrypted',
+    //     'bank_name' => 'encrypted',
+    //     'branch_name' => 'encrypted',
+    //     'ifsc_code' => 'encrypted',
+    // ];
 
     /**
      * Mask sensitive data in API responses.

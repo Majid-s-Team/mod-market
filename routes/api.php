@@ -34,7 +34,7 @@ use App\Http\Controllers\API\PushNotificationController;
 */
 
 // User Registration and Login
-Route::get('test-notify',[NotificationController::class,'testNotification'])->name('test-notify');
+Route::get('test-notify', [NotificationController::class, 'testNotification'])->name('test-notify');
 Route::post('register/user', [AuthController::class, 'registerUser']);
 Route::post('register/inspector', [AuthController::class, 'registerInspector']);
 Route::post('login', [AuthController::class, 'login']);
@@ -59,7 +59,7 @@ Route::get('vehicle-ads', [VehicleAdController::class, 'index']);
 Route::get('public-vehicle-ads', [VehicleAdController::class, 'publicVehicleAds']);
 Route::get('categories', action: [CategoryController::class, 'index']);
 Route::get('subcategories', [SubCategoryController::class, 'index']);
-Route::get('forum/trending',[ForumPostController::class,'trendingForumPost']);
+Route::get('forum/trending', [ForumPostController::class, 'trendingForumPost']);
 
 
 /*
@@ -74,7 +74,6 @@ Route::prefix('socket/messages')->group(function () {
     Route::post('/seen', [MessageController::class, 'markSeen']);
     Route::get('inbox/{user_id}', [MessageController::class, 'inbox']);
     Route::post('/upload', [MessageController::class, 'uploadMedia']);
-
 });
 
 
@@ -176,18 +175,27 @@ Route::middleware(['auth:api'])->group(function () {
 
 
 
-    Route::get('/cards', [CardController::class, 'index']);
-    Route::post('/cards', [CardController::class, 'store']);
-    Route::get('cards/{id}', [CardController::class, 'show']);
-    Route::put('cards/{id}', [CardController::class, 'update']);
-    Route::delete('cards/{id}', [CardController::class, 'destroy']);
+    // Route::get('/cards', [CardController::class, 'index']);
+    // Route::post('/cards', [CardController::class, 'store']);
+    // Route::get('cards/{id}', [CardController::class, 'show']);
+    // Route::put('cards/{id}', [CardController::class, 'update']);
+    // Route::delete('cards/{id}', [CardController::class, 'destroy']);
+
+    Route::prefix('cards')->group(function () {
+        Route::post('/default/{id}', [CardController::class, 'setDefaultCard']);
+        Route::delete('/stripe/{id}', [CardController::class, 'deleteStripeCard']);
+        Route::get('/stripe', [CardController::class, 'listStripeCards']);
+        Route::post('/stripe/generate-link', [CardController::class, 'generateConnectAccountLink']);
+        Route::post('/create-stripe-card', [CardController::class, 'createStripeCard']);
+    });
+   
 
     Route::post('token-requests', [TokenRequestController::class, 'store']);
     Route::put('token-requests/{id}/status', [TokenRequestController::class, 'updateStatus']);
     Route::get('token-requests/published', [TokenRequestController::class, 'getAllPublishedRequests']);
     Route::get('token-requests/to-me', [TokenRequestController::class, 'getMyTokenRequests']);
     Route::get('token-requests/self', [InspectionRequestController::class, 'tokenSelf']);
-Route::put('inspection-requests/{id}/statusUpdate', [InspectionRequestController::class, 'updateRequestStatus']);
+    Route::put('inspection-requests/{id}/statusUpdate', [InspectionRequestController::class, 'updateRequestStatus']);
 
     Route::get('inspector/availability', [InspectorAvailabilityController::class, 'index']);
     Route::post('inspector/availability', [InspectorAvailabilityController::class, 'store']);
@@ -207,7 +215,6 @@ Route::put('inspection-requests/{id}/statusUpdate', [InspectionRequestController
     Route::get('/reviews/{id}', [ReviewController::class, 'userReviews']);
     Route::put('/reviews/{id}', [ReviewController::class, 'update']);
     Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
-
 });
 
 Route::middleware('auth:api')->prefix('notifications')->group(function () {
@@ -218,7 +225,6 @@ Route::middleware('auth:api')->prefix('notifications')->group(function () {
     Route::delete('/{id}', [NotificationController::class, 'destroy']);
     Route::delete('/clear/all', [NotificationController::class, 'clearAll']);
     Route::post('/send', [PushNotificationController::class, 'send']);
-
 });
 
 Route::get('/inspectors/{id?}', [InspectionRequestController::class, 'getInspectors']);
@@ -245,5 +251,4 @@ Route::prefix('dropdowns')->group(function () {
     Route::get('/electronics', [VehicleDropdownController::class, 'electronics']);
     Route::get('/interior-exteriors', [VehicleDropdownController::class, 'interiorExteriors']);
     Route::get('/all', [VehicleDropdownController::class, 'getAllDropdowns']);
-
 });

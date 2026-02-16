@@ -37,6 +37,8 @@ return new class extends Migration {
             $table->string('cover_photo')->nullable();
             $table->string('deviece_type')->nullable();
             $table->string('role')->default('user');
+            $table->tinyIncrements('gateway_charges_enabled')->default(0);
+            $table->tinyIncrements('gateway_payouts_enabled')->default(0);
             $table->rememberToken();
             $table->timestamps();
         });

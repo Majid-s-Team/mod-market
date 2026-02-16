@@ -185,10 +185,11 @@ Route::middleware(['auth:api'])->group(function () {
         Route::post('/default/{id}', [CardController::class, 'setDefaultCard']);
         Route::delete('/stripe/{id}', [CardController::class, 'deleteStripeCard']);
         Route::get('/stripe', [CardController::class, 'listStripeCards']);
-        Route::post('/stripe/generate-link', [CardController::class, 'generateConnectAccountLink']);
         Route::post('/create-stripe-card', [CardController::class, 'createStripeCard']);
     });
-   
+    Route::post('/connect-account', [CardController::class, 'generateConnectAccountLink']);
+    Route::get('/connect-account/status', [CardController::class, 'checkConnectAccountStatus']);
+
 
     Route::post('token-requests', [TokenRequestController::class, 'store']);
     Route::put('token-requests/{id}/status', [TokenRequestController::class, 'updateStatus']);

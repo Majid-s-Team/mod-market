@@ -53,6 +53,8 @@ class User extends Authenticatable implements JWTSubject
         'fcm_token',
         'gateway_customer_id',
         'gateway_connect_id',
+        'gateway_charges_enabled',
+        'gateway_payouts_enabled',
     ];
 
     protected $hidden = [

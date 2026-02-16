@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Card;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -185,7 +186,7 @@ class CardController extends Controller
         if (!$card) {
             return $this->apiError('Card not found', [], 404);
         }
-          if ($card->is_default) {
+        if ($card->is_default) {
             return $this->apiError('Cannot delete default card', [], 400);
         }
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
@@ -260,5 +261,27 @@ class CardController extends Controller
         }
 
         return $this->apiResponse('Connect account link generated successfully', ['url' => $accountLink->url]);
+    }
+
+    public function checkConnectAccountStatus()
+    {
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        $connect_account_id = Auth::user()->gateway_connect_id;
+
+        if (!$connect_account_id) {
+            return $this->apiError('Connect account not found', [], 404);
+        }
+
+        try {
+            $account = $stripe->accounts->retrieve($connect_account_id);
+        } catch (\Exception $e) {
+            return $this->apiError('Failed to retrieve connect account status: ' . $e->getMessage(), [], 500);
+        }
+
+        User::where('id', Auth::id())->update([
+            'gateway_charges_enabled' => $account->charges_enabled,
+            'gateway_payouts_enabled' => $account->payouts_enabled,
+        ]);
+        return $this->apiResponse('Connect account status retrieved successfully', User::find(Auth::id())  );
     }
 }

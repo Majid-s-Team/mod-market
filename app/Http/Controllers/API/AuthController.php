@@ -21,11 +21,13 @@ class AuthController extends Controller
 
     public function registerUser(RegisterUserRequest $request)
     {
+        $customer_id = $this->createStripeCustomer($request);
+        $connect_account_id = $this->createStripeConnectAccount($request);
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'latitude'=>$request->latitude,
-            'longitude'=>$request->longitude,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
             'contact_number' => $request->contact_number,
             'password' => Hash::make($request->password),
             'is_term_accept' => $request->is_term_accept,
@@ -33,6 +35,8 @@ class AuthController extends Controller
             'cover_photo' => $request->cover_photo_url ?? null,
             'role' => 'user',
             'fcm_token' => $request->fcm_token ?? null,
+            'gateway_customer_id' => $customer_id,
+            'gateway_connect_id' => $connect_account_id,
         ]);
 
         $user->assignRole('user');
@@ -44,8 +48,6 @@ class AuthController extends Controller
             'access_token' => $token
 
         ]);
-
-
     }
     public function registerInspector(RegisterInspectorRequest $request)
     {
@@ -77,9 +79,8 @@ class AuthController extends Controller
         return $this->apiResponse('Inspector registered successfully', [
             // 'roles' => $user->getRoleNames(),
             'access_token' => $token,
-              'user' => $user->fresh(),
+            'user' => $user->fresh(),
         ]);
-
     }
 
     public function login(Request $request)
@@ -94,7 +95,7 @@ class AuthController extends Controller
 
         $loginInput = $request->login;
         $password = $request->password;
-        $role =$request->role;
+        $role = $request->role;
 
 
         $user = User::where('email', $loginInput)
@@ -104,7 +105,7 @@ class AuthController extends Controller
         if (!$user || !Hash::check($password, $user->password)) {
             return response()->json(['error' => 'Invalid credentials'], 422);
         }
-        if ($user->role !== $role){
+        if ($user->role !== $role) {
             return response()->json(['error' => 'Invalid credentials'], 422);
         }
 
@@ -117,70 +118,70 @@ class AuthController extends Controller
         ]);
     }
 
-       public function socialLogin(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'platform_id'   => 'required|string|max:255',
-        'platform_type' => 'required|in:facebook,google,apple',
-        'device_type'   => 'required|in:android,ios,web',
-        'device_token'  => 'nullable|string',
-        'name'    => 'required|string',
-        'role' => 'required|in:user,inspector',
-        'contact_no'   => 'nullable|string',
-        'email'         => 'nullable|email',
-        'profile_image'     => 'nullable|url',
-        'is_term_accept' => 'required|boolean'
+    public function socialLogin(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'platform_id'   => 'required|string|max:255',
+            'platform_type' => 'required|in:facebook,google,apple',
+            'device_type'   => 'required|in:android,ios,web',
+            'device_token'  => 'nullable|string',
+            'name'    => 'required|string',
+            'role' => 'required|in:user,inspector',
+            'contact_no'   => 'nullable|string',
+            'email'         => 'nullable|email',
+            'profile_image'     => 'nullable|url',
+            'is_term_accept' => 'required|boolean'
 
-    ]);
+        ]);
 
-    if ($validator->fails()) {
-        return $this->apiResponse('Validation Error', $validator->errors()->all(), 422);
-    }
+        if ($validator->fails()) {
+            return $this->apiResponse('Validation Error', $validator->errors()->all(), 422);
+        }
 
-    $params = $validator->validated();
+        $params = $validator->validated();
 
-    // Try finding existing user
-    $user = User::where('platform_type', $params['platform_type'])
-        ->where('platform_id', $params['platform_id'])
-        ->first();
+        // Try finding existing user
+        $user = User::where('platform_type', $params['platform_type'])
+            ->where('platform_id', $params['platform_id'])
+            ->first();
 
         // dd(vars: $user);
 
-    // Apple case: no email provided
-    if (empty($user) && empty($params['email'])&& $params['device_type']=='ios') {
-        return $this->apiResponse(
-            'The current information is incomplete. Please go to Settings > Apple ID > Password & Security > Sign in with Apple, remove the app, and sign in again.',
-            [],
-            400
-        );
+        // Apple case: no email provided
+        if (empty($user) && empty($params['email']) && $params['device_type'] == 'ios') {
+            return $this->apiResponse(
+                'The current information is incomplete. Please go to Settings > Apple ID > Password & Security > Sign in with Apple, remove the app, and sign in again.',
+                [],
+                400
+            );
+        }
+
+        // Create or update user
+        $userData = User::socialUser($params);
+        $user = User::find($userData->id);
+
+        // Check if user is inactive
+        // if (!$user->is_active) {
+        //     return $this->apiResponse('Account is deactivated. Please contact support.', [], 403);
+        // }
+
+        // Generate new API token
+        $token = JWTAuth::fromUser($user);
+
+        return $this->apiResponse('Social login successful', [
+            'access_token' => $token,
+            'user' => $user,
+        ]);
+        // Update device_token if provided
+        if (!empty($params['device_token'])) {
+            $user->update(['device_token' => $params['device_token']]);
+        }
+
+        return $this->apiResponse('Social login successful', [
+            'token' => $token,
+            'user'  => $user,
+        ]);
     }
-
-    // Create or update user
-    $userData = User::socialUser($params);
-    $user = User::find($userData->id);
-
-    // Check if user is inactive
-    // if (!$user->is_active) {
-    //     return $this->apiResponse('Account is deactivated. Please contact support.', [], 403);
-    // }
-
-    // Generate new API token
-   $token = JWTAuth::fromUser($user);
-
-return $this->apiResponse('Social login successful', [
-    'access_token' => $token,
-    'user' => $user,
-]);
-    // Update device_token if provided
-    if (!empty($params['device_token'])) {
-        $user->update(['device_token' => $params['device_token']]);
-    }
-
-    return $this->apiResponse('Social login successful', [
-        'token' => $token,
-        'user'  => $user,
-    ]);
-}
 
     public function forgotPassword(Request $request)
     {
@@ -289,7 +290,7 @@ return $this->apiResponse('Social login successful', [
 
         return $this->apiResponse('Password changed successfully');
     }
- public function getUsers(Request $request, $id = null)
+    public function getUsers(Request $request, $id = null)
     {
         if ($id) {
             $user = User::where('role', 'user')->findOrFail($id);
@@ -307,4 +308,40 @@ return $this->apiResponse('Social login successful', [
     }
 
 
+    public function createStripeCustomer($request)
+    {
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        try {
+            $customer = $stripe->customers->create([
+                'email' => $request->email,
+                'name' => $request->name,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+        return $customer->id;
+    }
+
+    public function createStripeConnectAccount($request)
+    {
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        try {
+            $account = $stripe->accounts->create([
+                'type' => 'custom',
+                'email' => $request->email,
+                'business_type' => 'individual',
+                'individual' => [
+                    'first_name' => $request->name,
+                    'email' => $request->email,
+                ],
+                'capabilities' => [
+                    'card_payments' => ['requested' => true],
+                    'transfers' => ['requested' => true],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+        return $account->id;
+    }
 }

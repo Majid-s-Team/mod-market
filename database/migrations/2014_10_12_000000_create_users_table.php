@@ -29,6 +29,14 @@ return new class extends Migration {
             $table->string('profile_image')->nullable();
             $table->string('otp')->nullable();
             $table->timestamp('otp_expire_at')->nullable();
+            $table->string('gateway_customer_id',200)->nullable();
+            $table->string('gateway_connect_id',200)->nullable();
+            $table->string('device_token')->nullable();
+            $table->string('latitude')->nullable();
+            $table->string('longitude')->nullable();
+            $table->string('cover_photo')->nullable();
+            $table->string('deviece_type')->nullable();
+            $table->string('role')->default('user');
             $table->rememberToken();
             $table->timestamps();
         });

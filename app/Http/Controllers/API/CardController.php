@@ -62,7 +62,6 @@ class CardController extends Controller
             $card,
             201
         );
-
     }
 
     public function show($id)
@@ -122,8 +121,8 @@ class CardController extends Controller
 
         return $this->apiResponse(
             ($request->type ?? $card->type) === 'card'
-            ? 'Card updated successfully'
-            : 'Bank account updated successfully',
+                ? 'Card updated successfully'
+                : 'Bank account updated successfully',
             $card
         );
     }
@@ -140,5 +139,82 @@ class CardController extends Controller
         $card->delete();
 
         return $this->apiResponse('Card deleted successfully');
+    }
+
+    public function createStripeCard(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string|max:255',
+        ]);
+        if ($validator->fails()) {
+            return $this->apiError('Validation error', $validator->errors()->toArray(), 422);
+        }
+
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        $customer_id = Auth::user()->gateway_customer_id;
+        $card = $stripe->customers->createSource(
+            $customer_id,
+            ['source' => $request->token]
+        );
+        Card::create([
+            'user_id' => Auth::id(),
+            'type' => 'card',
+            'card_holder' => $card->name ?? null,
+            'card_number' => '**** **** **** ' . substr($card->last4, -4),
+            'expiry_month' => $card->exp_month ?? null,
+            'expiry_year' => $card->exp_year ?? null,
+        ]);
+        return $this->apiResponse('Stripe card created successfully');
+    }
+
+    public function deleteStripeCard($id)
+    {
+        $card = Card::where('id', $id)->where('user_id', Auth::id())->first();
+
+        if (!$card) {
+            return $this->apiError('Card not found', [], 404);
+        }
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        $customer_id = Auth::user()->gateway_customer_id;
+        try {
+            $stripe->customers->deleteSource(
+                $customer_id,
+                $card->stripe_card_id
+            );
+        } catch (\Exception $e) {
+            return $this->apiError('Failed to delete card from Stripe: ' . $e->getMessage(), [], 500);
+        }
+
+        $card->delete();
+
+        return $this->apiResponse('Stripe card deleted successfully');
+    }
+
+    public function listStripeCards()
+    {
+        $stripecards = Card::where('user_id', Auth::id())->whereNotNull('stripe_card_id')->get();
+        return $this->apiResponse('Stripe cards fetched successfully', $stripecards);
+    }
+
+
+    public function setDefaultCard($id)
+    {
+        $card = Card::where('id', $id)->where('user_id', Auth::id())->first();
+
+        if (!$card) {
+            return $this->apiError('Card not found', [], 404);
+        }
+
+       $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        $customer_id = Auth::user()->gateway_customer_id;
+        try {
+            $stripe->customers->update(
+                $customer_id,
+                ['default_source' => $card->stripe_card_id]
+            );      
+        $card->is_default = true;
+        $card->save();
+
+        return $this->apiResponse('Default card set successfully', $card);
     }
 }

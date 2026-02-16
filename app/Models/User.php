@@ -50,7 +50,9 @@ class User extends Authenticatable implements JWTSubject
         'otp',
         'otp_expire_at',
         'role',
-        'fcm_token'
+        'fcm_token',
+        'gateway_customer_id',
+        'gateway_connect_id',
     ];
 
     protected $hidden = [

@@ -252,8 +252,8 @@ class CardController extends Controller
         try {
             $accountLink = $stripe->accountLinks->create([
                 'account' => $connect_account_id,
-                'refresh_url' => url('/api/stripe/connect/refresh'),
-                'return_url' => url('/api/stripe/connect/return'),
+                'refresh_url' => url('/stripe/connect/refresh'),
+                'return_url' => url('/stripe/connect/return'),
                 'type' => 'account_onboarding',
             ]);
         } catch (\Exception $e) {
@@ -282,6 +282,6 @@ class CardController extends Controller
             'gateway_charges_enabled' => $account->charges_enabled,
             'gateway_payouts_enabled' => $account->payouts_enabled,
         ]);
-        return $this->apiResponse('Connect account status retrieved successfully', User::find(Auth::id())  );
+        return $this->apiResponse('Connect account status retrieved successfully', User::find(Auth::id()));
     }
 }

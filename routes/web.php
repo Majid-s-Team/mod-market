@@ -20,3 +20,11 @@ Route::get('/', function () {
 Route::get('stripe',function(){
     return view('stripe');
 })->name('stripe');
+
+
+Route::get('stipe/connect/refresh', function () {
+    return view('stripe_connect_refresh');
+})->name('stripe.connect.refresh');
+Route::get('/stripe/connect/return', function () {
+    return view('stripe-connect');
+})->name('stripe.connect.return');

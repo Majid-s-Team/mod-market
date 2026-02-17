@@ -167,7 +167,7 @@ class CardController extends Controller
             'card_id' => $card->id,
             'type' => 'card',
             'card_holder' => $card->name ?? null,
-            'card_number' => '**** **** **** ' . substr($card->last4, -4),
+            'card_number' => $card->last4 ?? null,
             'expiry_month' => $card->exp_month ?? null,
             'expiry_year' => $card->exp_year ?? null,
             'brand' => $card->brand ?? null,

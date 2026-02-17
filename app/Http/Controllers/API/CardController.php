@@ -207,7 +207,7 @@ class CardController extends Controller
 
     public function listStripeCards()
     {
-        $stripecards = Card::where('user_id', Auth::id())->whereNotNull('stripe_card_id')->get();
+        $stripecards = Card::where('user_id', Auth::id())->whereNotNull('card_id')->get();
         if ($stripecards->isEmpty()) {
             return $this->apiResponse('No Stripe cards found', [], 404);
         }
